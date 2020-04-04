@@ -1,0 +1,23 @@
+{
+  "name": "distributor-contract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NexusMutual/distributor-contract.git"
+  },
+  "author": "tech@nexusmutual.io",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NexusMutual/distributor-contract/issues"
+  },
+  "homepage": "https://github.com/NexusMutual/distributor-contract#readme",
+  "dependencies": {
+    "@openzeppelin/cli": "^2.8.0",
+    "@openzeppelin/contracts": "^2.5.0"
+  }
+}
