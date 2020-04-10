@@ -2,25 +2,25 @@ pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
 
-import * as ERC721Full from "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
-import * as IERC20 from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import * as Ownable from "@openzeppelin/contracts/ownership/Ownable.sol";
-import * as ReentrancyGuard from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import * as SafeMath from "@openzeppelin/contracts/math/SafeMath.sol";
-import * as INXMMaster from "./interfaces/INXMMaster.sol";
-import * as Pool1 from "./interfaces/Pool1.sol";
-import * as PoolData from "./interfaces/PoolData.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./interfaces/INXMMaster.sol";
+import "./interfaces/Pool1.sol";
+import "./interfaces/PoolData.sol";
 import * as TokenDataContract from "./interfaces/TokenData.sol";
-import * as Claims from "./interfaces/Claims.sol";
-import * as ClaimsData from "./interfaces/ClaimsData.sol";
-import * as NXMToken from "./interfaces/NXMToken.sol";
-import * as QuotationData from "./interfaces/QuotationData.sol";
+import "./interfaces/Claims.sol";
+import "./interfaces/ClaimsData.sol";
+import "./interfaces/NXMToken.sol";
+import "./interfaces/QuotationData.sol";
 
 
 contract Distributor is
-  ERC721Full.ERC721Full("NXMDistributorNFT", "NXMDNFT"),
-  Ownable.Ownable,
-  ReentrancyGuard.ReentrancyGuard {
+  ERC721Full("NXMDistributorNFT", "NXMDNFT"),
+  Ownable,
+  ReentrancyGuard {
 
   struct TokenData {
     uint expirationTimestamp;
@@ -44,7 +44,7 @@ contract Distributor is
   );
 
 
-  INXMMaster.INXMMaster internal nxMaster;
+  INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
   uint256 internal tokenIdCounter;
   mapping(uint256 => TokenData) internal allTokenData;
@@ -53,7 +53,7 @@ contract Distributor is
   mapping(bytes4 => uint) withdrawableTokens;
 
   constructor(address _masterAddress, uint _priceLoadPercentage) public {
-    nxMaster = INXMMaster.INXMMaster(_masterAddress);
+    nxMaster = INXMMaster(_masterAddress);
     priceLoadPercentage = _priceLoadPercentage;
   }
 
@@ -74,18 +74,18 @@ contract Distributor is
     if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
 
-      Pool1.Pool1 p1 = Pool1.Pool1(nxMaster.getLatestAddress("P1"));
+      Pool1 p1 = Pool1(nxMaster.getLatestAddress("P1"));
       p1.makeCoverBegin.value(coverDetails[1])(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
 
       // add fee to the withdrawable pool
       withdrawableETH = withdrawableETH.add(requiredValue.sub(coverDetails[1]));
     } else {
-      PoolData.PoolData pd = PoolData.PoolData(nxMaster.getLatestAddress("PD"));
-      IERC20.IERC20 erc20 = IERC20.IERC20(pd.getCurrencyAssetAddress(coverCurrency));
+      PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
+      IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
 
       address payable pool1Address = nxMaster.getLatestAddress("P1");
-      Pool1.Pool1 p1 = Pool1.Pool1(pool1Address);
+      Pool1 p1 = Pool1(pool1Address);
       erc20.approve(pool1Address, coverDetails[1]);
       p1.makeCoverUsingCA(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
 
@@ -94,7 +94,7 @@ contract Distributor is
     }
 
     // mint token
-    QuotationData.QuotationData quotationData = QuotationData.QuotationData(nxMaster.getLatestAddress("QD"));
+    QuotationData quotationData = QuotationData(nxMaster.getLatestAddress("QD"));
     TokenDataContract.TokenData tokenData = TokenDataContract.TokenData(nxMaster.getLatestAddress("TD"));
     // *assumes* the newly created claim is appended at the end of the list covers
     uint coverId = quotationData.getCoverLength().sub(1);
@@ -115,10 +115,10 @@ contract Distributor is
     require(!allTokenData[tokenId].claimInProgress, "Claim already in progress");
     require(allTokenData[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    Claims.Claims claims = Claims.Claims(nxMaster.getLatestAddress("CL"));
+    Claims claims = Claims(nxMaster.getLatestAddress("CL"));
     claims.submitClaim(allTokenData[tokenId].coverId);
 
-    ClaimsData.ClaimsData claimsData = ClaimsData.ClaimsData(nxMaster.getLatestAddress("CD"));
+    ClaimsData claimsData = ClaimsData(nxMaster.getLatestAddress("CD"));
     uint claimId = claimsData.actualClaimLength() - 1;
     allTokenData[tokenId].claimInProgress = true;
     allTokenData[tokenId].claimId = claimId;
@@ -134,13 +134,13 @@ contract Distributor is
   {
     require(allTokenData[tokenId].claimInProgress, "No claim is in progress");
 
-    QuotationData.QuotationData quotationData = QuotationData.QuotationData(nxMaster.getLatestAddress("QD"));
+    QuotationData quotationData = QuotationData(nxMaster.getLatestAddress("QD"));
     uint8 coverStatus;
     uint sumAssured;
     (, coverStatus, sumAssured, , ) = quotationData.getCoverDetailsByCoverID2(allTokenData[tokenId].coverId);
 
-    if (coverStatus == uint8(QuotationData.QuotationData.CoverStatus.ClaimAccepted)) {
-      Claims.Claims claims = Claims.Claims(nxMaster.getLatestAddress("CL"));
+    if (coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted)) {
+      Claims claims = Claims(nxMaster.getLatestAddress("CL"));
       uint256 status;
       (, status, , , ) = claims.getClaimbyIndex(allTokenData[tokenId].claimId);
 
@@ -165,8 +165,8 @@ contract Distributor is
     if (coverCurrency == "ETH") {
       msg.sender.transfer(sumAssured);
     } else {
-      PoolData.PoolData pd = PoolData.PoolData(nxMaster.getLatestAddress("PD"));
-      IERC20.IERC20 erc20 = IERC20.IERC20(pd.getCurrencyAssetAddress(coverCurrency));
+      PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
+      IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
     }
   }
@@ -179,7 +179,7 @@ contract Distributor is
   public
   onlyOwner
   {
-    NXMToken.NXMToken nxmToken = NXMToken.NXMToken(nxMaster.tokenAddress());
+    NXMToken nxmToken = NXMToken(nxMaster.tokenAddress());
     nxmToken.approve(_spender, _value);
   }
 
@@ -199,8 +199,8 @@ contract Distributor is
     require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
     withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
 
-    PoolData.PoolData pd = PoolData.PoolData(nxMaster.getLatestAddress("PD"));
-    IERC20.IERC20 erc20 = IERC20.IERC20(pd.getCurrencyAssetAddress(_currency));
+    PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
+    IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(_currency));
     require(erc20.transfer(_recipient, _amount), "Transfer failed");
   }
 
@@ -209,9 +209,9 @@ contract Distributor is
     onlyOwner
   {
     address payable pool1Address = nxMaster.getLatestAddress("P1");
-    Pool1.Pool1 p1 = Pool1.Pool1(pool1Address);
+    Pool1 p1 = Pool1(pool1Address);
 
-    NXMToken.NXMToken nxmToken = NXMToken.NXMToken(nxMaster.tokenAddress());
+    NXMToken nxmToken = NXMToken(nxMaster.tokenAddress());
 
     uint ethValue = p1.getWei(amount);
     nxmToken.approve(pool1Address, amount);
