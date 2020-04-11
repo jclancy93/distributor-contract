@@ -1,6 +1,5 @@
-pragma solidity 0.5.7;
+pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
-
 
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -43,14 +42,14 @@ contract Distributor is
     bytes4 currency
   );
 
+  bytes4 internal constant ethCurrency = "ETH";
 
   INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
   uint256 internal tokenIdCounter;
   mapping(uint256 => TokenData) internal allTokenData;
 
-  uint public withdrawableETH;
-  mapping(bytes4 => uint) withdrawableTokens;
+  mapping(bytes4 => uint) public withdrawableTokens;
 
   constructor(address _masterAddress, uint _priceLoadPercentage) public {
     nxMaster = INXMMaster(_masterAddress);
@@ -71,14 +70,14 @@ contract Distributor is
   {
     uint requiredValue = priceLoadPercentage.mul(coverDetails[1]).div(100).add(coverDetails[1]);
 
-    if (coverCurrency == "ETH") {
+    if (coverCurrency == ethCurrency) {
       require(msg.value == requiredValue, "Incorrect value sent");
 
       Pool1 p1 = Pool1(nxMaster.getLatestAddress("P1"));
       p1.makeCoverBegin.value(coverDetails[1])(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
 
       // add fee to the withdrawable pool
-      withdrawableETH = withdrawableETH.add(requiredValue.sub(coverDetails[1]));
+      withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(requiredValue.sub(coverDetails[1]));
     } else {
       PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
       IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
@@ -162,7 +161,7 @@ contract Distributor is
     )
     internal
   {
-    if (coverCurrency == "ETH") {
+    if (coverCurrency == ethCurrency) {
       msg.sender.transfer(sumAssured);
     } else {
       PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
@@ -188,8 +187,8 @@ contract Distributor is
     onlyOwner
     nonReentrant
   {
-    require(withdrawableETH >= _amount, "Not enough ETH");
-    withdrawableETH = withdrawableETH.sub(_amount);
+    require(withdrawableTokens[ethCurrency] >= _amount, "Not enough ETH");
+    withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].sub(_amount);
     _recipient.transfer(_amount);
   }
 
@@ -219,7 +218,7 @@ contract Distributor is
     nxmToken.approve(pool1Address, amount);
     p1.sellNXMTokens(amount);
 
-    withdrawableETH = withdrawableETH.add(ethValue);
+    withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
@@ -228,6 +227,6 @@ contract Distributor is
   }
 
   function () payable external {
-    emit PayoutReceived(msg.sender, msg.value, "ETH");
+    emit PayoutReceived(msg.sender, msg.value, ethCurrency);
   }
 }

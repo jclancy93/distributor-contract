@@ -13,7 +13,7 @@
   You should have received a copy of the GNU General external License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
-pragma solidity 0.5.7;
+pragma solidity ^0.5.17;
 
 interface MCR {
 
@@ -69,7 +69,7 @@ interface MCR {
     /**
      * @dev Calculates the Token Price of NXM in a given currency.
      * @param curr Currency name.
-     
+
      */
     function calculateStepTokenPrice(
         bytes4 curr,
@@ -81,9 +81,9 @@ interface MCR {
      * @dev Calculates the Token Price of NXM in a given currency
      * with provided token supply for dynamic token price calculation
      * @param curr Currency name.
-     */ 
+     */
     function calculateTokenPrice (bytes4 curr) external view returns(uint tokenPrice);
-    
+
     function calVtpAndMCRtp() external view returns(uint vtp, uint mcrtp);
 
     function calculateVtpAndMCRtp(uint poolBalance) external view returns(uint vtp, uint mcrtp);
@@ -92,7 +92,7 @@ interface MCR {
 
     /**
      * @dev Gets max numbers of tokens that can be sold at the moment.
-     */ 
+     */
     function getMaxSellTokens() external view returns(uint maxTokens);
 
     /**

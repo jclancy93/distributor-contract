@@ -13,11 +13,10 @@
   You should have received a copy of the GNU General external License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
-pragma solidity 0.5.7;
-
+pragma solidity ^0.5.17;
 
 interface Claims {
-  
+
     /**
      * @dev Gets details of a given claim id.
      * @param _claimId Claim Id.

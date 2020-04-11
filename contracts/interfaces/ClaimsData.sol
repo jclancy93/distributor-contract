@@ -13,6 +13,8 @@
   You should have received a copy of the GNU General external License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
+pragma solidity ^0.5.17;
+
 contract ClaimsData {
     function actualClaimLength() external view returns(uint);
 }
