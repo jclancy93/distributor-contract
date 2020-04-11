@@ -14,6 +14,7 @@ import "./interfaces/Claims.sol";
 import "./interfaces/ClaimsData.sol";
 import "./interfaces/NXMToken.sol";
 import "./interfaces/QuotationData.sol";
+import "./NXMClient.sol";
 
 
 contract Distributor is
@@ -21,10 +22,16 @@ contract Distributor is
   Ownable,
   ReentrancyGuard {
 
+  NXMClient.Data nxmClientData;
+
   struct TokenData {
     uint expirationTimestamp;
     bytes4 coverCurrency;
-    uint[] coverDetails;
+    uint coverAmount;
+    uint coverPrice;
+    uint coverPriceNXM;
+    uint expireTime;
+    uint generationTime;
     uint coverId;
     bool claimInProgress;
     uint claimId;
@@ -54,6 +61,7 @@ contract Distributor is
   constructor(address _masterAddress, uint _priceLoadPercentage) public {
     nxMaster = INXMMaster(_masterAddress);
     priceLoadPercentage = _priceLoadPercentage;
+    nxmClientData.nxMaster = nxMaster;
   }
 
   function buyCover(
@@ -68,40 +76,35 @@ contract Distributor is
      public
      payable
   {
-    uint requiredValue = priceLoadPercentage.mul(coverDetails[1]).div(100).add(coverDetails[1]);
 
-    if (coverCurrency == ethCurrency) {
+    uint coverPrice = coverDetails[1];
+    uint requiredValue = priceLoadPercentage.mul(coverPrice).div(100).add(coverPrice);
+    if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
-
-      Pool1 p1 = Pool1(nxMaster.getLatestAddress("P1"));
-      p1.makeCoverBegin.value(coverDetails[1])(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
-
-      // add fee to the withdrawable pool
-      withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(requiredValue.sub(coverDetails[1]));
     } else {
       PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
       IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
-
-      address payable pool1Address = nxMaster.getLatestAddress("P1");
-      Pool1 p1 = Pool1(pool1Address);
-      erc20.approve(pool1Address, coverDetails[1]);
-      p1.makeCoverUsingCA(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
-
-      // add fee to the withdrawable pool
-      withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverDetails[1]));
     }
 
+    uint coverId = NXMClient.buyCover(nxmClientData, coveredContractAddress,
+      coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+
+    withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(requiredValue.sub(coverPrice));
     // mint token
-    QuotationData quotationData = QuotationData(nxMaster.getLatestAddress("QD"));
     TokenDataContract.TokenData tokenData = TokenDataContract.TokenData(nxMaster.getLatestAddress("TD"));
-    // *assumes* the newly created claim is appended at the end of the list covers
-    uint coverId = quotationData.getCoverLength().sub(1);
     uint256 lockTokenTimeAfterCoverExpiry = tokenData.lockTokenTimeAfterCoverExp();
 
     uint256 nextTokenId = tokenIdCounter++;
     uint expirationTimestamp = block.timestamp + lockTokenTimeAfterCoverExpiry + coverPeriod * 1 days;
-    allTokenData[nextTokenId] = TokenData(expirationTimestamp, coverCurrency, coverDetails, coverId, false, 0);
+    allTokenData[nextTokenId] = TokenData(expirationTimestamp,
+      coverCurrency,
+      coverDetails[0],
+      coverDetails[1],
+      coverDetails[2],
+      coverDetails[3],
+      coverDetails[4],
+      coverId, false, 0);
     _mint(msg.sender, nextTokenId);
   }
 
@@ -114,11 +117,8 @@ contract Distributor is
     require(!allTokenData[tokenId].claimInProgress, "Claim already in progress");
     require(allTokenData[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    Claims claims = Claims(nxMaster.getLatestAddress("CL"));
-    claims.submitClaim(allTokenData[tokenId].coverId);
+    uint claimId = NXMClient.submitClaim(nxmClientData, allTokenData[tokenId].coverId);
 
-    ClaimsData claimsData = ClaimsData(nxMaster.getLatestAddress("CD"));
-    uint claimId = claimsData.actualClaimLength() - 1;
     allTokenData[tokenId].claimInProgress = true;
     allTokenData[tokenId].claimId = claimId;
   }
