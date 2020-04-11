@@ -183,9 +183,10 @@ contract Distributor is
     nxmToken.approve(_spender, _value);
   }
 
-  function withdrawETH(address payable _recipient, uint256 _amount)
+  function withdrawEther(address payable _recipient, uint256 _amount)
     external
     onlyOwner
+    nonReentrant
   {
     require(withdrawableETH >= _amount, "Not enough ETH");
     withdrawableETH = withdrawableETH.sub(_amount);
@@ -195,6 +196,7 @@ contract Distributor is
   function withdrawTokens(address payable _recipient, uint256 _amount, bytes4 _currency)
     external
     onlyOwner
+    nonReentrant
   {
     require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
     withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
