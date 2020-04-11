@@ -132,16 +132,13 @@ contract Distributor is
     nonReentrant
   {
     require(allTokenData[tokenId].claimInProgress, "No claim is in progress");
-
-    QuotationData quotationData = QuotationData(nxMaster.getLatestAddress("QD"));
     uint8 coverStatus;
     uint sumAssured;
-    (, coverStatus, sumAssured, , ) = quotationData.getCoverDetailsByCoverID2(allTokenData[tokenId].coverId);
+    (, coverStatus, sumAssured, , ) = NXMClient.getCover(nxmClientData, allTokenData[tokenId].coverId);
 
     if (coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted)) {
-      Claims claims = Claims(nxMaster.getLatestAddress("CL"));
       uint256 status;
-      (, status, , , ) = claims.getClaimbyIndex(allTokenData[tokenId].claimId);
+      (, status, , , ) = NXMClient.getClaim(nxmClientData, allTokenData[tokenId].claimId);
 
       if (status == 14 || status == 7) {
         _burn(tokenId);

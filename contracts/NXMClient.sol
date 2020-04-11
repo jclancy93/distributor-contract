@@ -59,4 +59,32 @@ library NXMClient {
         uint claimId = claimsData.actualClaimLength() - 1;
         return claimId;
     }
+
+    function getCover(
+        Data storage data,
+        uint coverId
+    ) public returns (
+        uint cid,
+        uint8 status,
+        uint sumAssured,
+        uint16 coverPeriod,
+        uint validUntil
+    ) {
+        QuotationData quotationData = QuotationData(data.nxMaster.getLatestAddress("QD"));
+        return quotationData.getCoverDetailsByCoverID2(coverId);
+    }
+
+    function getClaim(
+        Data storage data,
+        uint claimIdValue
+    ) public returns (
+        uint claimId,
+        uint status,
+        int8 finalVerdict,
+        address claimOwner,
+        uint coverId
+    ) {
+        Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
+        return claims.getClaimbyIndex(claimIdValue);
+    }
 }
