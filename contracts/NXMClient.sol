@@ -19,6 +19,24 @@ library NXMClient {
         INXMMaster nxMaster;
     }
 
+    enum ClaimStatus {
+        PendingClaimAssessorVote, // 0
+        PendingClaimAssessorVoteDenied, // 1
+        PendingClaimAssessorVoteThresholdNotReachedAccept, // 2
+        PendingClaimAssessorVoteThresholdNotReachedDeny, // 3
+        PendingClaimAssessorConsensusNotReachedAccept, // 4
+        PendingClaimAssessorConsensusNotReachedDeny, // 5
+        FinalClaimAssessorVoteDenied, // 6
+        FinalClaimAssessorVoteAccepted, // 7
+        FinalClaimAssessorVoteDeniedMVAccepted, // 8
+        FinalClaimAssessorVoteDeniedMVDenied, // 9
+        FinalClaimAssessorVotAcceptedMVNoDecision, // 10
+        FinalClaimAssessorVoteDeniedMVNoDecision, // 11
+        ClaimAcceptedPayoutPending, // 12
+        ClaimAcceptedNoPayout, // 13
+        ClaimAcceptedPayoutDone // 14
+    }
+
     function initialize(Data storage data, address masterAddress) public {
         data.nxMaster = INXMMaster(masterAddress);
     }
@@ -78,20 +96,6 @@ library NXMClient {
         return quotationData.getCoverDetailsByCoverID2(coverId);
     }
 
-    function getClaim(
-        Data storage data,
-        uint claimIdValue
-    ) public view returns (
-        uint claimId,
-        uint status,
-        int8 finalVerdict,
-        address claimOwner,
-        uint coverId
-    ) {
-        Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
-        return claims.getClaimbyIndex(claimIdValue);
-    }
-
     function sellNXMTokens(
         Data storage data,
         uint amount
@@ -120,5 +124,13 @@ library NXMClient {
 
     function getTokenAddress(Data storage data) public view returns (address) {
         return data.nxMaster.tokenAddress();
+    }
+
+    function payoutIsCompleted(Data storage data, uint claimId) public view returns (bool) {
+        uint256 status;
+        Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
+        (, status, , , ) = claims.getClaimbyIndex(claimId);
+        return status == uint(ClaimStatus.FinalClaimAssessorVoteAccepted)
+            || status == uint(ClaimStatus.ClaimAcceptedPayoutDone);
     }
 }

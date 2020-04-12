@@ -125,20 +125,12 @@ contract Distributor is
     uint sumAssured;
     (, coverStatus, sumAssured, , ) = nxmClient.getCover(tokens[tokenId].coverId);
 
-    if (coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted)) {
-      uint256 status;
-      (, status, , , ) = nxmClient.getClaim(tokens[tokenId].claimId);
+    require(coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted), "Claim is not accepted");
+    require(nxmClient.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
 
-      if (status == 14 || status == 7) {
-        _burn(tokenId);
-        _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
-        emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverCurrency);
-      } else {
-        revert("Claim accepted but payout not completed");
-      }
-    } else {
-      revert("Claim is not accepted");
-    }
+    _burn(tokenId);
+    _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
+    emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverCurrency);
   }
 
   function _sendAssuredSum(
