@@ -19,6 +19,10 @@ library NXMClient {
         INXMMaster nxMaster;
     }
 
+    function initialize(Data storage data, address masterAddress) public {
+        data.nxMaster = INXMMaster(masterAddress);
+    }
+
     function buyCover(
         Data storage data,
         address coveredContractAddress,
@@ -28,7 +32,7 @@ library NXMClient {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) public returns (uint) {
+    ) public returns (uint coverId) {
 
         uint coverPrice = coverDetails[1];
         if (coverCurrency == "ETH") {
@@ -45,8 +49,7 @@ library NXMClient {
 
         QuotationData quotationData = QuotationData(data.nxMaster.getLatestAddress("QD"));
         // *assumes* the newly created claim is appended at the end of the list covers
-        uint coverId = quotationData.getCoverLength().sub(1);
-        return coverId;
+        coverId = quotationData.getCoverLength().sub(1);
     }
 
     function submitClaim(
@@ -78,7 +81,7 @@ library NXMClient {
     function getClaim(
         Data storage data,
         uint claimIdValue
-    ) public returns (
+    ) public view returns (
         uint claimId,
         uint status,
         int8 finalVerdict,
@@ -105,20 +108,17 @@ library NXMClient {
         p1.sellNXMTokens(amount);
     }
 
-    function getCurrencyAssetAddress(
-        Data storage data,
-        bytes4 currency
-    ) public returns (
-        address assetAddress
-    ) {
+    function getCurrencyAssetAddress(Data storage data, bytes4 currency) public view returns (address) {
         PoolData pd = PoolData(data.nxMaster.getLatestAddress("PD"));
-        assetAddress = pd.getCurrencyAssetAddress(currency);
+        return pd.getCurrencyAssetAddress(currency);
     }
 
-    function getLockTokenTimeAfterCoverExpiry(
-        Data storage data
-    ) public returns (uint lockTokenTimeAfterCoverExpiry) {
+    function getLockTokenTimeAfterCoverExpiry(Data storage data) public returns (uint) {
         TokenData tokenData = TokenData(data.nxMaster.getLatestAddress("TD"));
-        lockTokenTimeAfterCoverExpiry = tokenData.lockTokenTimeAfterCoverExp();
+        return tokenData.lockTokenTimeAfterCoverExp();
+    }
+
+    function getTokenAddress(Data storage data) public view returns (address) {
+        return data.nxMaster.tokenAddress();
     }
 }

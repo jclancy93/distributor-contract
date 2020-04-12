@@ -7,11 +7,6 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/INXMMaster.sol";
-import "./interfaces/Pool1.sol";
-import "./interfaces/PoolData.sol";
-import "./interfaces/Claims.sol";
-import "./interfaces/ClaimsData.sol";
-import "./interfaces/NXMToken.sol";
 import "./interfaces/QuotationData.sol";
 import "./NXMClient.sol";
 
@@ -51,7 +46,6 @@ contract Distributor is
   bytes4 internal constant ethCurrency = "ETH";
 
   NXMClient.Data nxmClient;
-  INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
@@ -59,9 +53,8 @@ contract Distributor is
   mapping(bytes4 => uint) public withdrawableTokens;
 
   constructor(address _masterAddress, uint _priceLoadPercentage) public {
-    nxMaster = INXMMaster(_masterAddress);
     priceLoadPercentage = _priceLoadPercentage;
-    nxmClient.nxMaster = nxMaster;
+    nxmClient.initialize(_masterAddress);
   }
 
   function buyCover(
@@ -168,7 +161,7 @@ contract Distributor is
   public
   onlyOwner
   {
-    NXMToken nxmToken = NXMToken(nxMaster.tokenAddress());
+    IERC20 nxmToken = IERC20(nxmClient.getTokenAddress());
     nxmToken.approve(_spender, _value);
   }
 
