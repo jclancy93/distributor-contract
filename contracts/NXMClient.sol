@@ -105,6 +105,16 @@ library NXMClient {
         p1.sellNXMTokens(amount);
     }
 
+    function getCurrencyAssetAddress(
+        Data storage data,
+        bytes4 currency
+    ) public returns (
+        address assetAddress
+    ) {
+        PoolData pd = PoolData(data.nxMaster.getLatestAddress("PD"));
+        assetAddress = pd.getCurrencyAssetAddress(currency);
+    }
+
     function getLockTokenTimeAfterCoverExpiry(
         Data storage data
     ) public returns (uint lockTokenTimeAfterCoverExpiry) {

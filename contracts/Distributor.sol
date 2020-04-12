@@ -54,7 +54,7 @@ contract Distributor is
   INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
   uint256 internal issuedTokensCount;
-  mapping(uint256 => Token) internal tokens;
+  mapping(uint256 => Token) public tokens;
 
   mapping(bytes4 => uint) public withdrawableTokens;
 
@@ -82,8 +82,7 @@ contract Distributor is
     if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
     } else {
-      PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
-      IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
+      IERC20 erc20 = IERC20(nxmClient.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
     }
 
@@ -160,14 +159,9 @@ contract Distributor is
     if (coverCurrency == ethCurrency) {
       msg.sender.transfer(sumAssured);
     } else {
-      PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
-      IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
+      IERC20 erc20 = IERC20(nxmClient.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
     }
-  }
-
-  function getTokenData(uint tokenId) public view returns (Token memory) {
-    return tokens[tokenId];
   }
 
   function nxmTokenApprove(address _spender, uint256 _value)
@@ -196,8 +190,7 @@ contract Distributor is
     require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
     withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
 
-    PoolData pd = PoolData(nxMaster.getLatestAddress("PD"));
-    IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(_currency));
+    IERC20 erc20 = IERC20(nxmClient.getCurrencyAssetAddress(_currency));
     require(erc20.transfer(_recipient, _amount), "Transfer failed");
   }
 
