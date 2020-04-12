@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/INXMMaster.sol";
 import "./interfaces/Pool1.sol";
 import "./interfaces/PoolData.sol";
-import * as TokenDataContract from "./interfaces/TokenData.sol";
 import "./interfaces/Claims.sol";
 import "./interfaces/ClaimsData.sol";
 import "./interfaces/NXMToken.sol";
@@ -24,7 +23,7 @@ contract Distributor is
 
   using NXMClient for NXMClient.Data;
 
-  struct TokenData {
+  struct Token {
     uint expirationTimestamp;
     bytes4 coverCurrency;
     uint coverAmount;
@@ -54,8 +53,8 @@ contract Distributor is
   NXMClient.Data nxmClient;
   INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
-  uint256 internal tokenIdCounter;
-  mapping(uint256 => TokenData) internal allTokenData;
+  uint256 internal issuedTokensCount;
+  mapping(uint256 => Token) internal tokens;
 
   mapping(bytes4 => uint) public withdrawableTokens;
 
@@ -91,13 +90,13 @@ contract Distributor is
     uint coverId = nxmClient.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
 
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(requiredValue.sub(coverPrice));
-    // mint token
-    TokenDataContract.TokenData tokenData = TokenDataContract.TokenData(nxMaster.getLatestAddress("TD"));
-    uint256 lockTokenTimeAfterCoverExpiry = tokenData.lockTokenTimeAfterCoverExp();
 
-    uint256 nextTokenId = tokenIdCounter++;
+
+    // mint token
+    uint256 lockTokenTimeAfterCoverExpiry = nxmClient.getLockTokenTimeAfterCoverExpiry();
+    uint256 nextTokenId = issuedTokensCount++;
     uint expirationTimestamp = block.timestamp + lockTokenTimeAfterCoverExpiry + coverPeriod * 1 days;
-    allTokenData[nextTokenId] = TokenData(expirationTimestamp,
+    tokens[nextTokenId] = Token(expirationTimestamp,
       coverCurrency,
       coverDetails[0],
       coverDetails[1],
@@ -114,13 +113,13 @@ contract Distributor is
     public
     onlyTokenApprovedOrOwner(tokenId)
   {
-    require(!allTokenData[tokenId].claimInProgress, "Claim already in progress");
-    require(allTokenData[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
+    require(!tokens[tokenId].claimInProgress, "Claim already in progress");
+    require(tokens[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    uint claimId = nxmClient.submitClaim(allTokenData[tokenId].coverId);
+    uint claimId = nxmClient.submitClaim(tokens[tokenId].coverId);
 
-    allTokenData[tokenId].claimInProgress = true;
-    allTokenData[tokenId].claimId = claimId;
+    tokens[tokenId].claimInProgress = true;
+    tokens[tokenId].claimId = claimId;
   }
 
 
@@ -131,19 +130,19 @@ contract Distributor is
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    require(allTokenData[tokenId].claimInProgress, "No claim is in progress");
+    require(tokens[tokenId].claimInProgress, "No claim is in progress");
     uint8 coverStatus;
     uint sumAssured;
-    (, coverStatus, sumAssured, , ) = nxmClient.getCover(allTokenData[tokenId].coverId);
+    (, coverStatus, sumAssured, , ) = nxmClient.getCover(tokens[tokenId].coverId);
 
     if (coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted)) {
       uint256 status;
-      (, status, , , ) = nxmClient.getClaim(allTokenData[tokenId].claimId);
+      (, status, , , ) = nxmClient.getClaim(tokens[tokenId].claimId);
 
       if (status == 14 || status == 7) {
         _burn(tokenId);
-        _sendAssuredSum(allTokenData[tokenId].coverCurrency, sumAssured);
-        emit ClaimRedeemed(msg.sender, sumAssured, allTokenData[tokenId].coverCurrency);
+        _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
+        emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverCurrency);
       } else {
         revert("Claim accepted but payout not completed");
       }
@@ -167,8 +166,8 @@ contract Distributor is
     }
   }
 
-  function getTokenData(uint tokenId) public view returns (TokenData memory) {
-    return allTokenData[tokenId];
+  function getTokenData(uint tokenId) public view returns (Token memory) {
+    return tokens[tokenId];
   }
 
   function nxmTokenApprove(address _spender, uint256 _value)

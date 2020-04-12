@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/Claims.sol";
 import "./interfaces/ClaimsData.sol";
 import "./interfaces/NXMToken.sol";
+import "./interfaces/TokenData.sol";
 
 library NXMClient {
     using SafeMath for uint;
@@ -102,5 +103,12 @@ library NXMClient {
         ethValue = p1.getWei(amount);
         nxmToken.approve(pool1Address, amount);
         p1.sellNXMTokens(amount);
+    }
+
+    function getLockTokenTimeAfterCoverExpiry(
+        Data storage data
+    ) public returns (uint lockTokenTimeAfterCoverExpiry) {
+        TokenData tokenData = TokenData(data.nxMaster.getLatestAddress("TD"));
+        lockTokenTimeAfterCoverExpiry = tokenData.lockTokenTimeAfterCoverExp();
     }
 }
