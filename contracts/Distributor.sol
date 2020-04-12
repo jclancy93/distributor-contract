@@ -1,12 +1,10 @@
 pragma solidity ^0.5.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/INXMMaster.sol";
 import "./interfaces/QuotationData.sol";
 import "./NXMClient.sol";
 
