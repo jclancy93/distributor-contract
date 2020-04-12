@@ -9,6 +9,7 @@ import "./interfaces/TokenData.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/Claims.sol";
 import "./interfaces/ClaimsData.sol";
+import "./interfaces/NXMToken.sol";
 
 library NXMClient {
     using SafeMath for uint;
@@ -16,7 +17,6 @@ library NXMClient {
     struct Data {
         INXMMaster nxMaster;
     }
-
 
     function buyCover(
         Data storage data,
@@ -86,5 +86,21 @@ library NXMClient {
     ) {
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         return claims.getClaimbyIndex(claimIdValue);
+    }
+
+    function sellNXMTokens(
+        Data storage data,
+        uint amount
+    ) public returns (
+        uint ethValue
+    ) {
+        address payable pool1Address = data.nxMaster.getLatestAddress("P1");
+        Pool1 p1 = Pool1(pool1Address);
+
+        NXMToken nxmToken = NXMToken(data.nxMaster.tokenAddress());
+
+        ethValue = p1.getWei(amount);
+        nxmToken.approve(pool1Address, amount);
+        p1.sellNXMTokens(amount);
     }
 }

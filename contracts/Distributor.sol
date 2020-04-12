@@ -206,15 +206,7 @@ contract Distributor is
     external
     onlyOwner
   {
-    address payable pool1Address = nxMaster.getLatestAddress("P1");
-    Pool1 p1 = Pool1(pool1Address);
-
-    NXMToken nxmToken = NXMToken(nxMaster.tokenAddress());
-
-    uint ethValue = p1.getWei(amount);
-    nxmToken.approve(pool1Address, amount);
-    p1.sellNXMTokens(amount);
-
+    uint ethValue = NXMClient.sellNXMTokens(nxmClientData, amount);
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
