@@ -22,7 +22,7 @@ contract Distributor is
   Ownable,
   ReentrancyGuard {
 
-  NXMClient.Data nxmClientData;
+  using NXMClient for NXMClient.Data;
 
   struct TokenData {
     uint expirationTimestamp;
@@ -51,6 +51,7 @@ contract Distributor is
 
   bytes4 internal constant ethCurrency = "ETH";
 
+  NXMClient.Data nxmClient;
   INXMMaster internal nxMaster;
   uint public priceLoadPercentage;
   uint256 internal tokenIdCounter;
@@ -61,7 +62,7 @@ contract Distributor is
   constructor(address _masterAddress, uint _priceLoadPercentage) public {
     nxMaster = INXMMaster(_masterAddress);
     priceLoadPercentage = _priceLoadPercentage;
-    nxmClientData.nxMaster = nxMaster;
+    nxmClient.nxMaster = nxMaster;
   }
 
   function buyCover(
@@ -87,8 +88,7 @@ contract Distributor is
       require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
     }
 
-    uint coverId = NXMClient.buyCover(nxmClientData, coveredContractAddress,
-      coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+    uint coverId = nxmClient.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
 
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(requiredValue.sub(coverPrice));
     // mint token
@@ -117,7 +117,7 @@ contract Distributor is
     require(!allTokenData[tokenId].claimInProgress, "Claim already in progress");
     require(allTokenData[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    uint claimId = NXMClient.submitClaim(nxmClientData, allTokenData[tokenId].coverId);
+    uint claimId = nxmClient.submitClaim(allTokenData[tokenId].coverId);
 
     allTokenData[tokenId].claimInProgress = true;
     allTokenData[tokenId].claimId = claimId;
@@ -134,11 +134,11 @@ contract Distributor is
     require(allTokenData[tokenId].claimInProgress, "No claim is in progress");
     uint8 coverStatus;
     uint sumAssured;
-    (, coverStatus, sumAssured, , ) = NXMClient.getCover(nxmClientData, allTokenData[tokenId].coverId);
+    (, coverStatus, sumAssured, , ) = nxmClient.getCover(allTokenData[tokenId].coverId);
 
     if (coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted)) {
       uint256 status;
-      (, status, , , ) = NXMClient.getClaim(nxmClientData, allTokenData[tokenId].claimId);
+      (, status, , , ) = nxmClient.getClaim(allTokenData[tokenId].claimId);
 
       if (status == 14 || status == 7) {
         _burn(tokenId);
@@ -206,7 +206,7 @@ contract Distributor is
     external
     onlyOwner
   {
-    uint ethValue = NXMClient.sellNXMTokens(nxmClientData, amount);
+    uint ethValue = nxmClient.sellNXMTokens(amount);
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
