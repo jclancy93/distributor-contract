@@ -44,14 +44,14 @@ contract Distributor is
   bytes4 internal constant ethCurrency = "ETH";
 
   NXMClient.Data nxmClient;
-  uint public priceLoadPercentage;
+  uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
 
   mapping(bytes4 => uint) public withdrawableTokens;
 
-  constructor(address _masterAddress, uint _priceLoadPercentage) public {
-    priceLoadPercentage = _priceLoadPercentage;
+  constructor(address _masterAddress, uint _distributorFeePercentage) public {
+    distributorFeePercentage = _distributorFeePercentage;
     nxmClient.initialize(_masterAddress);
   }
 
@@ -69,7 +69,7 @@ contract Distributor is
   {
 
     uint coverPrice = coverDetails[1];
-    uint requiredValue = priceLoadPercentage.mul(coverPrice).div(100).add(coverPrice);
+    uint requiredValue = distributorFeePercentage.mul(coverPrice).div(100).add(coverPrice);
     if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
     } else {
