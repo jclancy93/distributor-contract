@@ -29,12 +29,6 @@ contract Distributor is
     uint claimId;
   }
 
-  event PayoutReceived (
-    address sender,
-    uint value,
-    bytes4 currency
-  );
-
   event ClaimRedeemed (
     address receiver,
     uint value,
@@ -189,6 +183,5 @@ contract Distributor is
   }
 
   function () payable external {
-    emit PayoutReceived(msg.sender, msg.value, ethCurrency);
   }
 }
