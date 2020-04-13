@@ -19,6 +19,15 @@ library NXMClient {
         INXMMaster nxMaster;
     }
 
+    enum CoverStatus {
+        Active,
+        ClaimAccepted,
+        ClaimDenied,
+        CoverExpired,
+        ClaimSubmitted,
+        Requested
+    }
+
     enum ClaimStatus {
         PendingClaimAssessorVote, // 0
         PendingClaimAssessorVoteDenied, // 1
@@ -85,7 +94,7 @@ library NXMClient {
     function getCover(
         Data storage data,
         uint coverId
-    ) public returns (
+    ) public view returns (
         uint cid,
         uint8 status,
         uint sumAssured,

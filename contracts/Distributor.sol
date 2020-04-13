@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/QuotationData.sol";
 import "./NXMClient.sol";
 
 
@@ -103,7 +102,6 @@ contract Distributor is
     tokens[tokenId].claimId = claimId;
   }
 
-
   function redeemClaim(
     uint256 tokenId
   )
@@ -116,7 +114,7 @@ contract Distributor is
     uint sumAssured;
     (, coverStatus, sumAssured, , ) = nxmClient.getCover(tokens[tokenId].coverId);
 
-    require(coverStatus == uint8(QuotationData.CoverStatus.ClaimAccepted), "Claim is not accepted");
+    require(coverStatus == uint8(NXMClient.CoverStatus.ClaimAccepted), "Claim is not accepted");
     require(nxmClient.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
 
     _burn(tokenId);
@@ -136,6 +134,11 @@ contract Distributor is
       IERC20 erc20 = IERC20(nxmClient.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
     }
+  }
+
+  function getCoverStatus(uint256 tokenId) external view returns (uint8 coverStatus, bool payoutCompleted) {
+    (, coverStatus, , , ) = nxmClient.getCover(tokens[tokenId].coverId);
+    payoutCompleted = nxmClient.payoutIsCompleted(tokenId);
   }
 
   function nxmTokenApprove(address _spender, uint256 _value)

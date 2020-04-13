@@ -108,6 +108,7 @@ interface QuotationData {
         uint _cid
     )
         external
+        view
         returns (
             uint cid,
             uint8 status,
@@ -125,6 +126,7 @@ interface QuotationData {
         uint _hcid
     )
         external
+        view
         returns (
             uint hcid,
             address scAddress,
