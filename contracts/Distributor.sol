@@ -78,7 +78,7 @@ contract Distributor is
     }
 
     uint coverId = nxmClient.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
-    withdrawableTokens[ethCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
+    withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
 
     // mint token
     uint256 lockTokenTimeAfterCoverExpiry = nxmClient.getLockTokenTimeAfterCoverExpiry();
