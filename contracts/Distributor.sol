@@ -75,9 +75,8 @@ contract Distributor is
     withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
 
     // mint token
-    uint256 lockTokenTimeAfterCoverExpiry = nxmClient.getLockTokenTimeAfterCoverExpiry();
     uint256 nextTokenId = issuedTokensCount++;
-    uint expirationTimestamp = block.timestamp + lockTokenTimeAfterCoverExpiry + coverPeriod * 1 days;
+    uint expirationTimestamp = block.timestamp + nxmClient.getLockTokenTimeAfterCoverExpiry() + coverPeriod * 1 days;
     tokens[nextTokenId] = Token(expirationTimestamp,
       coverCurrency,
       coverDetails[0],
