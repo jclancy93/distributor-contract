@@ -51,13 +51,13 @@ contract Distributor is
   function buyCover(
         address coveredContractAddress,
         bytes4 coverCurrency,
-        uint[] memory coverDetails,
+        uint[] calldata coverDetails,
         uint16 coverPeriod,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
   )
-     public
+     external
      payable
   {
 
@@ -90,7 +90,7 @@ contract Distributor is
   function submitClaim(
     uint256 tokenId
   )
-    public
+    external
     onlyTokenApprovedOrOwner(tokenId)
   {
     require(!tokens[tokenId].claimInProgress, "Claim already in progress");

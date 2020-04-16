@@ -54,12 +54,12 @@ library NXMClient {
         Data storage data,
         address coveredContractAddress,
         bytes4 coverCurrency,
-        uint[] memory coverDetails,
+        uint[] calldata coverDetails,
         uint16 coverPeriod,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) public returns (uint coverId) {
+    ) external returns (uint coverId) {
 
         uint coverPrice = coverDetails[1];
         if (coverCurrency == "ETH") {
@@ -82,7 +82,7 @@ library NXMClient {
     function submitClaim(
         Data storage data,
         uint coverId
-    ) public returns (uint) {
+    ) external returns (uint) {
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         claims.submitClaim(coverId);
 
@@ -94,7 +94,7 @@ library NXMClient {
     function getCover(
         Data storage data,
         uint coverId
-    ) public view returns (
+    ) external view returns (
         uint cid,
         uint8 status,
         uint sumAssured,
@@ -108,7 +108,7 @@ library NXMClient {
     function sellNXMTokens(
         Data storage data,
         uint amount
-    ) public returns (
+    ) external returns (
         uint ethValue
     ) {
         address payable pool1Address = data.nxMaster.getLatestAddress("P1");
@@ -121,21 +121,21 @@ library NXMClient {
         p1.sellNXMTokens(amount);
     }
 
-    function getCurrencyAssetAddress(Data storage data, bytes4 currency) public view returns (address) {
+    function getCurrencyAssetAddress(Data storage data, bytes4 currency) external view returns (address) {
         PoolData pd = PoolData(data.nxMaster.getLatestAddress("PD"));
         return pd.getCurrencyAssetAddress(currency);
     }
 
-    function getLockTokenTimeAfterCoverExpiry(Data storage data) public returns (uint) {
+    function getLockTokenTimeAfterCoverExpiry(Data storage data) external returns (uint) {
         TokenData tokenData = TokenData(data.nxMaster.getLatestAddress("TD"));
         return tokenData.lockTokenTimeAfterCoverExp();
     }
 
-    function getTokenAddress(Data storage data) public view returns (address) {
+    function getTokenAddress(Data storage data) external view returns (address) {
         return data.nxMaster.tokenAddress();
     }
 
-    function payoutIsCompleted(Data storage data, uint claimId) public view returns (bool) {
+    function payoutIsCompleted(Data storage data, uint claimId) external view returns (bool) {
         uint256 status;
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         (, status, , , ) = claims.getClaimbyIndex(claimId);
