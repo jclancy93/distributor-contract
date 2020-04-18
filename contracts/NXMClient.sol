@@ -62,16 +62,15 @@ library NXMClient {
     ) external returns (uint coverId) {
 
         uint coverPrice = coverDetails[1];
+        Pool1 pool1 = Pool1(data.nxMaster.getLatestAddress("P1"));
         if (coverCurrency == "ETH") {
-            Pool1 p1 = Pool1(data.nxMaster.getLatestAddress("P1"));
-            p1.makeCoverBegin.value(coverPrice)(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+            pool1.makeCoverBegin.value(coverPrice)(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
         } else {
-            address payable pool1Address = data.nxMaster.getLatestAddress("P1");
-            PoolData pd = PoolData(data.nxMaster.getLatestAddress("PD"));
-            IERC20 erc20 = IERC20(pd.getCurrencyAssetAddress(coverCurrency));
+            address payable pool1Address = address(uint160(address(pool1)));
+            PoolData poolData = PoolData(data.nxMaster.getLatestAddress("PD"));
+            IERC20 erc20 = IERC20(poolData.getCurrencyAssetAddress(coverCurrency));
             erc20.approve(pool1Address, coverPrice);
-            Pool1 p1 = Pool1(pool1Address);
-            p1.makeCoverUsingCA(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+            pool1.makeCoverUsingCA(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
         }
 
         QuotationData quotationData = QuotationData(data.nxMaster.getLatestAddress("QD"));
@@ -79,10 +78,7 @@ library NXMClient {
         coverId = quotationData.getCoverLength().sub(1);
     }
 
-    function submitClaim(
-        Data storage data,
-        uint coverId
-    ) external returns (uint) {
+    function submitClaim(Data storage data, uint coverId) external returns (uint) {
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         claims.submitClaim(coverId);
 
@@ -105,12 +101,7 @@ library NXMClient {
         return quotationData.getCoverDetailsByCoverID2(coverId);
     }
 
-    function sellNXMTokens(
-        Data storage data,
-        uint amount
-    ) external returns (
-        uint ethValue
-    ) {
+    function sellNXMTokens(Data storage data, uint amount) external returns (uint ethValue) {
         address payable pool1Address = data.nxMaster.getLatestAddress("P1");
         Pool1 p1 = Pool1(pool1Address);
 
