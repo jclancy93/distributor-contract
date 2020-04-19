@@ -46,7 +46,7 @@ library NXMClient {
         ClaimAcceptedPayoutDone // 14
     }
 
-    function initialize(Data storage data, address masterAddress) public {
+    function initialize(Data storage data, address masterAddress) internal {
         data.nxMaster = INXMMaster(masterAddress);
     }
 
@@ -54,12 +54,12 @@ library NXMClient {
         Data storage data,
         address coveredContractAddress,
         bytes4 coverCurrency,
-        uint[] calldata coverDetails,
+        uint[] memory coverDetails,
         uint16 coverPeriod,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external returns (uint coverId) {
+    ) internal returns (uint coverId) {
 
         uint coverPrice = coverDetails[1];
         Pool1 pool1 = Pool1(data.nxMaster.getLatestAddress("P1"));
@@ -78,7 +78,7 @@ library NXMClient {
         coverId = quotationData.getCoverLength().sub(1);
     }
 
-    function submitClaim(Data storage data, uint coverId) external returns (uint) {
+    function submitClaim(Data storage data, uint coverId) internal returns (uint) {
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         claims.submitClaim(coverId);
 
@@ -90,7 +90,7 @@ library NXMClient {
     function getCover(
         Data storage data,
         uint coverId
-    ) external view returns (
+    ) internal view returns (
         uint cid,
         uint8 status,
         uint sumAssured,
@@ -101,7 +101,7 @@ library NXMClient {
         return quotationData.getCoverDetailsByCoverID2(coverId);
     }
 
-    function sellNXMTokens(Data storage data, uint amount) external returns (uint ethValue) {
+    function sellNXMTokens(Data storage data, uint amount) internal returns (uint ethValue) {
         address payable pool1Address = data.nxMaster.getLatestAddress("P1");
         Pool1 p1 = Pool1(pool1Address);
 
@@ -112,21 +112,21 @@ library NXMClient {
         p1.sellNXMTokens(amount);
     }
 
-    function getCurrencyAssetAddress(Data storage data, bytes4 currency) external view returns (address) {
+    function getCurrencyAssetAddress(Data storage data, bytes4 currency) internal view returns (address) {
         PoolData pd = PoolData(data.nxMaster.getLatestAddress("PD"));
         return pd.getCurrencyAssetAddress(currency);
     }
 
-    function getLockTokenTimeAfterCoverExpiry(Data storage data) external returns (uint) {
+    function getLockTokenTimeAfterCoverExpiry(Data storage data) internal returns (uint) {
         TokenData tokenData = TokenData(data.nxMaster.getLatestAddress("TD"));
         return tokenData.lockTokenTimeAfterCoverExp();
     }
 
-    function getTokenAddress(Data storage data) external view returns (address) {
+    function getTokenAddress(Data storage data) internal view returns (address) {
         return data.nxMaster.tokenAddress();
     }
 
-    function payoutIsCompleted(Data storage data, uint claimId) external view returns (bool) {
+    function payoutIsCompleted(Data storage data, uint claimId) internal view returns (bool) {
         uint256 status;
         Claims claims = Claims(data.nxMaster.getLatestAddress("CL"));
         (, status, , , ) = claims.getClaimbyIndex(claimId);
