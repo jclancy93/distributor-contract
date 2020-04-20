@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./NXMClient.sol";
+import "./NexusMutualClient.sol";
 
 
 contract Distributor is
@@ -13,7 +13,7 @@ contract Distributor is
   Ownable,
   ReentrancyGuard {
 
-  using NXMClient for NXMClient.Data;
+  using NexusMutualClient for NexusMutualClient.Data;
 
   struct Token {
     uint expirationTimestamp;
@@ -36,7 +36,7 @@ contract Distributor is
 
   bytes4 internal constant ethCurrency = "ETH";
 
-  NXMClient.Data nxmClient;
+  NexusMutualClient.Data nxmClient;
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
@@ -114,7 +114,7 @@ contract Distributor is
     uint sumAssured;
     (, coverStatus, sumAssured, , ) = nxmClient.getCover(tokens[tokenId].coverId);
 
-    require(coverStatus == uint8(NXMClient.CoverStatus.ClaimAccepted), "Claim is not accepted");
+    require(coverStatus == uint8(NexusMutualClient.CoverStatus.ClaimAccepted), "Claim is not accepted");
     require(nxmClient.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
 
     _burn(tokenId);

@@ -49,7 +49,7 @@ library NexusMutualClient {
     function initialize(Data storage data, address masterAddress) internal {
         data.nxMaster = INXMMaster(masterAddress);
     }
-    
+
     function buyCover(
         Data storage data,
         address coveredContractAddress,
