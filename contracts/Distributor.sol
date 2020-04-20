@@ -48,6 +48,12 @@ contract Distributor is
     coverAPI.setMasterAddress(_masterAddress);
   }
 
+  // Arguments to be passed as coverDetails, from the quote api:
+  //    coverDetails[0] = coverAmount;
+  //    coverDetails[1] = coverPrice;
+  //    coverDetails[2] = coverPriceNXM;
+  //    coverDetails[3] = expireTime;
+  //    coverDetails[4] = generationTime;
   function buyCover(
         address coveredContractAddress,
         bytes4 coverCurrency,
