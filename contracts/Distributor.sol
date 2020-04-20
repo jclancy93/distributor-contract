@@ -36,7 +36,7 @@ contract Distributor is
 
   bytes4 internal constant ethCurrency = "ETH";
 
-  NexusMutualCover.Data nexusMutualClient;
+  NexusMutualCover.Data coverAPI;
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
@@ -45,7 +45,7 @@ contract Distributor is
 
   constructor(address _masterAddress, uint _distributorFeePercentage) public {
     distributorFeePercentage = _distributorFeePercentage;
-    nexusMutualClient.setMasterAddress(_masterAddress);
+    coverAPI.setMasterAddress(_masterAddress);
   }
 
   function buyCover(
@@ -66,16 +66,16 @@ contract Distributor is
     if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
     } else {
-      IERC20 erc20 = IERC20(nexusMutualClient.getCurrencyAssetAddress(coverCurrency));
+      IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
     }
 
-    uint coverId = nexusMutualClient.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+    uint coverId = coverAPI.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
     withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
 
     // mint token
     uint256 nextTokenId = issuedTokensCount++;
-    uint expirationTimestamp = block.timestamp + nexusMutualClient.getLockTokenTimeAfterCoverExpiry() + coverPeriod * 1 days;
+    uint expirationTimestamp = block.timestamp + coverAPI.getLockTokenTimeAfterCoverExpiry() + coverPeriod * 1 days;
     tokens[nextTokenId] = Token(expirationTimestamp,
       coverCurrency,
       coverDetails[0],
@@ -96,7 +96,7 @@ contract Distributor is
     require(!tokens[tokenId].claimInProgress, "Claim already in progress");
     require(tokens[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    uint claimId = nexusMutualClient.submitClaim(tokens[tokenId].coverId);
+    uint claimId = coverAPI.submitClaim(tokens[tokenId].coverId);
 
     tokens[tokenId].claimInProgress = true;
     tokens[tokenId].claimId = claimId;
@@ -112,10 +112,10 @@ contract Distributor is
     require(tokens[tokenId].claimInProgress, "No claim is in progress");
     uint8 coverStatus;
     uint sumAssured;
-    (, coverStatus, sumAssured, , ) = nexusMutualClient.getCover(tokens[tokenId].coverId);
+    (, coverStatus, sumAssured, , ) = coverAPI.getCover(tokens[tokenId].coverId);
 
     require(coverStatus == uint8(NexusMutualCover.CoverStatus.ClaimAccepted), "Claim is not accepted");
-    require(nexusMutualClient.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
+    require(coverAPI.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
 
     _burn(tokenId);
     _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
@@ -131,21 +131,21 @@ contract Distributor is
     if (coverCurrency == ethCurrency) {
       msg.sender.transfer(sumAssured);
     } else {
-      IERC20 erc20 = IERC20(nexusMutualClient.getCurrencyAssetAddress(coverCurrency));
+      IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(coverCurrency));
       require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
     }
   }
 
   function getCoverStatus(uint256 tokenId) external view returns (uint8 coverStatus, bool payoutCompleted) {
-    (, coverStatus, , , ) = nexusMutualClient.getCover(tokens[tokenId].coverId);
-    payoutCompleted = nexusMutualClient.payoutIsCompleted(tokenId);
+    (, coverStatus, , , ) = coverAPI.getCover(tokens[tokenId].coverId);
+    payoutCompleted = coverAPI.payoutIsCompleted(tokenId);
   }
 
   function nxmTokenApprove(address _spender, uint256 _value)
   public
   onlyOwner
   {
-    IERC20 nxmToken = IERC20(nexusMutualClient.getTokenAddress());
+    IERC20 nxmToken = IERC20(coverAPI.getTokenAddress());
     nxmToken.approve(_spender, _value);
   }
 
@@ -167,7 +167,7 @@ contract Distributor is
     require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
     withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
 
-    IERC20 erc20 = IERC20(nexusMutualClient.getCurrencyAssetAddress(_currency));
+    IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(_currency));
     require(erc20.transfer(_recipient, _amount), "Transfer failed");
   }
 
@@ -175,7 +175,7 @@ contract Distributor is
     external
     onlyOwner
   {
-    uint ethValue = nexusMutualClient.sellNXMTokens(amount);
+    uint ethValue = coverAPI.sellNXMTokens(amount);
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
