@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/NexusMutual/distributor-contract#readme",
   "dependencies": {
+    "@nexusmutual/cover-api": "^0.0.1",
     "@openzeppelin/cli": "^2.8.0",
     "@openzeppelin/contracts": "^2.5.0"
   },

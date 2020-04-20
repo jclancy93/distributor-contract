@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@nexusmutual/client/contracts/NexusMutualCover.sol";
+import "@nexusmutual/cover-api/contracts/NexusMutualCover.sol";
 
 
 contract Distributor is
