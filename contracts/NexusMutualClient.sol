@@ -12,7 +12,7 @@ import "./interfaces/ClaimsData.sol";
 import "./interfaces/NXMToken.sol";
 import "./interfaces/TokenData.sol";
 
-library NXMClient {
+library NexusMutualClient {
     using SafeMath for uint;
 
     struct Data {
@@ -49,7 +49,7 @@ library NXMClient {
     function initialize(Data storage data, address masterAddress) internal {
         data.nxMaster = INXMMaster(masterAddress);
     }
-
+    
     function buyCover(
         Data storage data,
         address coveredContractAddress,
