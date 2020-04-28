@@ -93,7 +93,13 @@ contract Distributor is
     external
     onlyTokenApprovedOrOwner(tokenId)
   {
-    require(!tokens[tokenId].claimInProgress, "Claim already in progress");
+
+    if (tokens[tokenId].claimInProgress) {
+      uint8 coverStatus;
+      (, coverStatus, , , ) = coverAPI.getCover(tokens[tokenId].coverId);
+      require(coverStatus == uint8(NexusMutualCover.CoverStatus.ClaimDenied),
+        "Can submit another claim only if the previous one was denied.");
+    }
     require(tokens[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
     uint claimId = coverAPI.submitClaim(tokens[tokenId].coverId);
