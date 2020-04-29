@@ -28,21 +28,11 @@ const MemberRoles = contract.fromArtifact('MemberRoles');
 const Distributor = contract.fromArtifact('Distributor');
 
 
-const INITIAL_SUPPLY = '1500000000000000000000000';
-
-const EXCHANGE_TOKEN = '10000000000000000000000';
-const EXCHANGE_ETHER = 10 ** 19;
+const INITIAL_SUPPLY = ether('1500000');
+const EXCHANGE_TOKEN = ether('10000');
+const EXCHANGE_ETHER = ether('10');
 const QE = '0x51042c4d8936a7764d18370a6a0762b860bb8e07';
 
-
-
-// const {ether, toHex, toWei} = require('./utils/ethTools');
-// const {increaseTimeTo, duration} = require('./utils/increaseTime');
-// const {latestTime} = require('./utils/latestTime');
-// const gvProp = require('./utils/gvProposal.js').gvProposal;
-// const encode = require('./utils/encoder.js').encode;
-// const getQuoteValues = require('./utils/getQuote.js').getQuoteValues;
-// const getValue = require('./utils/getMCRPerThreshold.js').getValue;
 
 const CA_ETH = '0x45544800';
 const CLA = '0x434c41';
@@ -89,20 +79,17 @@ const submitClaimDaiDeposit = coverBaseDaiPrice
 async function setup () {
 
   const founderAddress = accounts[0];
+  const owner = accounts[0];
 
+  // deploy external contracts
   const dai = await DAI.new();
   const mkr = await MKR.new();
-  const dsv = await DSValue.new(founderAddress);
+  const dsv = await DSValue.new(owner);
   const factory = await FactoryMock.new();
-  const exchange = await ExchangeMock.new(
-    dai.address,
-    factory.address
-  );
-  const exchangeMKR = await ExchangeMKRMock.new(
-    mkr.address,
-    factory.address
-  );
+  const exchange = await ExchangeMock.new(dai.address, factory.address);
+  const exchangeMKR = await ExchangeMKRMock.new(mkr.address, factory.address);
 
+  // initialize external contracts
   await factory.setFactory(dai.address, exchange.address);
   await factory.setFactory(mkr.address, exchangeMKR.address);
   await dai.transfer(exchange.address, EXCHANGE_TOKEN);
@@ -110,80 +97,83 @@ async function setup () {
   await exchange.recieveEther({ value: EXCHANGE_ETHER });
   await exchangeMKR.recieveEther({ value: EXCHANGE_ETHER });
 
-  const claims = await Claims.new();
-  const claimsData = await ClaimsData.new();
-  const claimsReward = await ClaimsReward.new();
-  const pool1 = await Pool1.new();
-  const pool2 = await Pool2.new(factory.address);
-  const poolData = await PoolData.new(founderAddress, dsv.address, dai.address);
-  const mcr = await MCR.new();
-  const tokenController = await TokenController.new();
-  const nxmToken = await NXMToken.new(founderAddress, INITIAL_SUPPLY);
-  const tokenData = await TokenData.new(founderAddress);
-  const tokenFunctions = await TokenFunctions.new();
-  const quotation = await Quotation.new();
-  const quotationData = await QuotationDataMock.new( QE, founderAddress);
-  const governance = await Governance.new();
-  const proposalCategory = await ProposalCategory.new();
-  const memberRoles = await MemberRoles.new();
-  const nxMaster = await NXMaster.new(nxmToken.address);
+  // nexusmutual contracts
+  const cl = await Claims.new();
+  const cd = await ClaimsData.new();
+  const cr = await ClaimsReward.new();
 
-  const distributor = await Distributor.new(nxMaster.address, distributorFeePercentage);
+  const p1 = await Pool1.new();
+  const p2 = await Pool2.new(factory.address);
+  const pd = await PoolData.new(owner, dsv.address, dai.address);
 
+  const mc = await MCR.new();
 
-  let addr = [
-    quotationData.address,
-    tokenData.address,
-    claimsData.address,
-    poolData.address,
-    quotationData.address,
-    tokenFunctions.address,
-    tokenController.address,
-    claims.address,
-    claimsReward.address,
-    pool1.address,
-    pool2.address,
-    mcr.address,
-    governance.address,
-    proposalCategory.address,
-    memberRoles.address
+  const tk = await NXMToken.new(owner, INITIAL_SUPPLY);
+  const tc = await TokenController.new();
+  const td = await TokenData.new(owner);
+  const tf = await TokenFunctions.new();
+
+  const qt = await Quotation.new();
+  const qd = await QuotationDataMock.new(QE, owner);
+
+  const gv = await Governance.new();
+  const pc = await ProposalCategory.new();
+  const mr = await MemberRoles.new();
+
+  const master = await NXMaster.new(tk.address);
+
+  const addresses = [
+    qd.address,
+    td.address,
+    cd.address,
+    pd.address,
+    qt.address,
+    tf.address,
+    tc.address,
+    cl.address,
+    cr.address,
+    p1.address,
+    p2.address,
+    mc.address,
+    gv.address,
+    pc.address,
+    mr.address,
   ];
-  await nxMaster.addNewVersion(addr);
-  let pcAddress = await nxMaster.getLatestAddress('0x5043');
-  await proposalCategory.proposalCategoryInitiate();
-  // await qd.changeCurrencyAssetAddress('0x444149', dai.address);
-  // await qd.changeInvestmentAssetAddress('0x444149', dai.address);
-  await pool1.sendEther({ from: Owner, value: POOL_ETHER });
-  await pool2.sendEther({ from: Owner, value: POOL_ETHER }); //
-  await mcr.addMCRData(
+
+  await master.addNewVersion(addresses);
+  await pc.proposalCategoryInitiate();
+
+  // fund pools
+  await p1.sendEther({ from: owner, value: ether('3500') });
+  await p2.sendEther({ from: owner, value: ether('3500') });
+  await dai.transfer(p2.address, ether('50'));
+
+  await mc.addMCRData(
     13000,
-    '100000000000000000000',
-    '7000000000000000000000',
-    ['0x455448', '0x444149'],
-    [100, 15517],
-    20190103
-  );
-  await pool2.saveIADetails(
-    ['0x455448', '0x444149'],
+    ether('100'),
+    ether('7000'),
+    [hex('ETH'), hex('DAI')],
     [100, 15517],
     20190103,
-    true
-  ); //testing
-  await dai.transfer(pool2.address, POOL_ASSET);
-  let mrInstance = await MemberRoles.at(
-    await nxMaster.getLatestAddress('0x4d52')
   );
-  await mrInstance.payJoiningFee(Owner, {
-    from: Owner,
-    value: '2000000000000000'
-  });
-  await mrInstance.kycVerdict(Owner, true);
-  await mrInstance.addInitialABMembers([Owner]);
+
+  await p2.saveIADetails(
+    [hex('ETH'), hex('DAI')],
+    [100, 15517],
+    20190103,
+    true,
+  );
+
+  await mr.payJoiningFee(owner, { from: owner, value: ether('0.02') });
+  await mr.kycVerdict(owner, true);
+  await mr.addInitialABMembers([owner]);
+
+  return { master };
 
   // setup only for tests
 
-  await memberRoles.addMembersBeforeLaunch([], []);
-  (await memberRoles.launched()).should.be.equal(true);
+  await mr.addMembersBeforeLaunch([], []);
+  (await mr.launched()).should.be.equal(true);
   await mcr.addMCRData(
     await getValue(toWei(2), pd, mcr),
     toWei(100),
@@ -192,45 +182,46 @@ async function setup () {
     [100, 65407],
     20181011
   );
-  (await poolData.capReached()).toString().should.be.equal((1).toString());
-
-  await memberRoles.payJoiningFee(member1, {from: member1, value: fee});
-  await memberRoles.kycVerdict(member1, true);
-  await memberRoles.payJoiningFee(member2, {from: member2, value: fee});
-  await memberRoles.kycVerdict(member2, true);
-  await memberRoles.payJoiningFee(member3, {from: member3, value: fee});
-  await memberRoles.kycVerdict(member3, true);
-  await memberRoles.payJoiningFee(staker1, {from: staker1, value: fee});
-  await memberRoles.kycVerdict(staker1, true);
-  await memberRoles.payJoiningFee(staker2, {from: staker2, value: fee});
-  await memberRoles.kycVerdict(staker2, true);
-  await memberRoles.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
-  await memberRoles.kycVerdict(coverHolder, true);
-  await memberRoles.payJoiningFee(distributor.address, {
+  (await pd.capReached()).toString().should.be.equal((1).toString());
+  // await mr.payJoiningFee(owner, { from: owner, value: fee });
+  // await mr.kycVerdict(owner, true);
+  await mr.payJoiningFee(member1, {from: member1, value: fee});
+  await mr.kycVerdict(member1, true);
+  await mr.payJoiningFee(member2, {from: member2, value: fee});
+  await mr.kycVerdict(member2, true);
+  await mr.payJoiningFee(member3, {from: member3, value: fee});
+  await mr.kycVerdict(member3, true);
+  await mr.payJoiningFee(staker1, {from: staker1, value: fee});
+  await mr.kycVerdict(staker1, true);
+  await mr.payJoiningFee(staker2, {from: staker2, value: fee});
+  await mr.kycVerdict(staker2, true);
+  await mr.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
+  await mr.kycVerdict(coverHolder, true);
+  await mr.payJoiningFee(distributor.address, {
     from: coverHolder,
     value: fee
   });
-  await memberRoles.kycVerdict(distributor.address, true);
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1});
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2});
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3});
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1});
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2});
-  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder});
+  await mr.kycVerdict(distributor.address, true);
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1});
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2});
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3});
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1});
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2});
+  await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder});
   await distributor.nxmTokenApprove(tc.address, UNLIMITED_ALLOWANCE, {
     from: coverHolder
   });
 
-  await nxmToken.transfer(member1, ether(250));
-  await nxmToken.transfer(member2, ether(250));
-  await nxmToken.transfer(member3, ether(250));
-  await nxmToken.transfer(coverHolder, ether(250));
+  await tk.transfer(member1, ether(250));
+  await tk.transfer(member2, ether(250));
+  await tk.transfer(member3, ether(250));
+  await tk.transfer(coverHolder, ether(250));
   await tk.transfer(distributor.address, ether(250));
-  await nxmToken.transfer(staker1, ether(250));
-  await nxmToken.transfer(staker2, ether(250));
-  await tokenFunctions.addStake(smartConAdd, stakeTokens, {from: staker1});
-  await tokenFunctions.addStake(smartConAdd, stakeTokens, {from: staker2});
-  maxVotingTime = await claimsData.maxVotingTime();
+  await tk.transfer(staker1, ether(250));
+  await tk.transfer(staker2, ether(250));
+  await tf.addStake(smartConAdd, stakeTokens, {from: staker1});
+  await tf.addStake(smartConAdd, stakeTokens, {from: staker2});
+  maxVotingTime = await cd.maxVotingTime();
 }
 
 async function setupVoting () {
