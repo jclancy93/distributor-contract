@@ -1,8 +1,16 @@
 const { contract, accounts } = require('@openzeppelin/test-environment');
 
-const Distributor = contract.fromArtifact('Distributor');
+const DAI = contract.fromArtifact('MockDAI');
+const MKR = contract.fromArtifact('MockMKR');
+const DSValue = contract.fromArtifact('NXMDSValueMock');
+const FactoryMock = contract.fromArtifact('FactoryMock');
+const ExchangeMock = contract.fromArtifact('ExchangeMock');
+const ExchangeMKRMock = contract.fromArtifact('ExchangeMock');
 const NXMToken = contract.fromArtifact('NXMToken');
 const NXMaster = contract.fromArtifact('NXMaster');
+
+const Distributor = contract.fromArtifact('Distributor');
+
 
 const INITIAL_SUPPLY = '1500000000000000000000000';
 
