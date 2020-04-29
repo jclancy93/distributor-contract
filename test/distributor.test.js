@@ -110,25 +110,130 @@ async function setup () {
   await exchange.recieveEther({ value: EXCHANGE_ETHER });
   await exchangeMKR.recieveEther({ value: EXCHANGE_ETHER });
 
-  await Claims.new();
-  await ClaimsData.new();
-  await ClaimsReward.new();
-  await Pool1.new();
-  await Pool2.new(factory.address);
-  await PoolData.new(founderAddress, dsv.address, dai.address);
-  await MCR.new();
+  const claims = await Claims.new();
+  const claimsData = await ClaimsData.new();
+  const claimsReward = await ClaimsReward.new();
+  const pool1 = await Pool1.new();
+  const pool2 = await Pool2.new(factory.address);
+  const poolData = await PoolData.new(founderAddress, dsv.address, dai.address);
+  const mcr = await MCR.new();
   const tokenController = await TokenController.new();
   const nxmToken = await NXMToken.new(founderAddress, INITIAL_SUPPLY);
-  await TokenData.new(founderAddress);
-  await TokenFunctions.new();
-  await Quotation.new();
-  await QuotationDataMock.new( QE, founderAddress);
-  await Governance.new();
-  await ProposalCategory.new();
-  await MemberRoles.new();
+  const tokenData = await TokenData.new(founderAddress);
+  const tokenFunctions = await TokenFunctions.new();
+  const quotation = await Quotation.new();
+  const quotationData = await QuotationDataMock.new( QE, founderAddress);
+  const governance = await Governance.new();
+  const proposalCategory = await ProposalCategory.new();
+  const memberRoles = await MemberRoles.new();
   const nxMaster = await NXMaster.new(nxmToken.address);
 
   const distributor = await Distributor.new(nxMaster.address, distributorFeePercentage);
+
+
+  let addr = [
+    quotationData.address,
+    tokenData.address,
+    claimsData.address,
+    poolData.address,
+    quotationData.address,
+    tokenFunctions.address,
+    tokenController.address,
+    claims.address,
+    claimsReward.address,
+    pool1.address,
+    pool2.address,
+    mcr.address,
+    governance.address,
+    proposalCategory.address,
+    memberRoles.address
+  ];
+  await nxMaster.addNewVersion(addr);
+  let pcAddress = await nxMaster.getLatestAddress('0x5043');
+  await proposalCategory.proposalCategoryInitiate();
+  // await qd.changeCurrencyAssetAddress('0x444149', dai.address);
+  // await qd.changeInvestmentAssetAddress('0x444149', dai.address);
+  await pool1.sendEther({ from: Owner, value: POOL_ETHER });
+  await pool2.sendEther({ from: Owner, value: POOL_ETHER }); //
+  await mcr.addMCRData(
+    13000,
+    '100000000000000000000',
+    '7000000000000000000000',
+    ['0x455448', '0x444149'],
+    [100, 15517],
+    20190103
+  );
+  await pool2.saveIADetails(
+    ['0x455448', '0x444149'],
+    [100, 15517],
+    20190103,
+    true
+  ); //testing
+  await dai.transfer(pool2.address, POOL_ASSET);
+  let mrInstance = await MemberRoles.at(
+    await nxMaster.getLatestAddress('0x4d52')
+  );
+  await mrInstance.payJoiningFee(Owner, {
+    from: Owner,
+    value: '2000000000000000'
+  });
+  await mrInstance.kycVerdict(Owner, true);
+  await mrInstance.addInitialABMembers([Owner]);
+
+  // setup only for tests
+
+  await memberRoles.addMembersBeforeLaunch([], []);
+  (await memberRoles.launched()).should.be.equal(true);
+  await mcr.addMCRData(
+    await getValue(toWei(2), pd, mcr),
+    toWei(100),
+    toWei(2),
+    ['0x455448', '0x444149'],
+    [100, 65407],
+    20181011
+  );
+  (await poolData.capReached()).toString().should.be.equal((1).toString());
+
+  await memberRoles.payJoiningFee(member1, {from: member1, value: fee});
+  await memberRoles.kycVerdict(member1, true);
+  await memberRoles.payJoiningFee(member2, {from: member2, value: fee});
+  await memberRoles.kycVerdict(member2, true);
+  await memberRoles.payJoiningFee(member3, {from: member3, value: fee});
+  await memberRoles.kycVerdict(member3, true);
+  await memberRoles.payJoiningFee(staker1, {from: staker1, value: fee});
+  await memberRoles.kycVerdict(staker1, true);
+  await memberRoles.payJoiningFee(staker2, {from: staker2, value: fee});
+  await memberRoles.kycVerdict(staker2, true);
+  await memberRoles.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
+  await memberRoles.kycVerdict(coverHolder, true);
+  await memberRoles.payJoiningFee(distributor.address, {
+    from: coverHolder,
+    value: fee
+  });
+  await memberRoles.kycVerdict(distributor.address, true);
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1});
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2});
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3});
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1});
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2});
+  await nxmToken.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder});
+  await distributor.nxmTokenApprove(tc.address, UNLIMITED_ALLOWANCE, {
+    from: coverHolder
+  });
+
+  await nxmToken.transfer(member1, ether(250));
+  await nxmToken.transfer(member2, ether(250));
+  await nxmToken.transfer(member3, ether(250));
+  await nxmToken.transfer(coverHolder, ether(250));
+  await tk.transfer(distributor.address, ether(250));
+  await nxmToken.transfer(staker1, ether(250));
+  await nxmToken.transfer(staker2, ether(250));
+  await tokenFunctions.addStake(smartConAdd, stakeTokens, {from: staker1});
+  await tokenFunctions.addStake(smartConAdd, stakeTokens, {from: staker2});
+  maxVotingTime = await claimsData.maxVotingTime();
+}
+
+async function setupVoting () {
 
 }
 
@@ -147,6 +252,9 @@ describe('Distributor', function () {
     distributorFeeReceiver
   ] = accounts;
 
-  it('does nothing', async function () {
+
+  describe('ETH covers', function () {
+    it('does nothing', async function () {
+    });
   });
 });
