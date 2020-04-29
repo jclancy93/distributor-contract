@@ -113,13 +113,15 @@ async function setup () {
     '7000000000000000000000',
     ['0x455448', '0x444149'],
     [100, 15517],
-    20190103
+    20190103,
+    { from: owner }
   );
   await p2.saveIADetails(
     ['0x455448', '0x444149'],
     [100, 15517],
     20190103,
-    true
+    true,
+    { from: owner }
   ); //testing
 
   let mrInstance = await MemberRoles.at(
@@ -129,7 +131,9 @@ async function setup () {
     from: owner,
     value: '2000000000000000'
   });
-  await mrInstance.kycVerdict(owner, true);
+  await mrInstance.kycVerdict(owner, true, {
+    from: owner,
+  });
   await mrInstance.addInitialABMembers([owner]);
 
   return { master };
