@@ -144,6 +144,13 @@ describe('Distributor', function () {
     );
     (await pd.capReached()).toString().should.be.equal((1).toString());
 
+    // const payJoiningFees = [member1, member2, member3, staker1, staker2, coverHolder, coverHolder].map(async (member) => {
+    //   await mr.payJoiningFee(member, {from: member, value: fee});
+    //   await mr.kycVerdict(member, true);
+    // });
+    //
+    // await Promise.all(payJoiningFees);
+
     await mr.payJoiningFee(member1, {from: member1, value: fee});
     await mr.kycVerdict(member1, true);
     await mr.payJoiningFee(member2, {from: member2, value: fee});
@@ -156,20 +163,25 @@ describe('Distributor', function () {
     await mr.kycVerdict(staker2, true);
     await mr.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
     await mr.kycVerdict(coverHolder, true);
+
+
     await mr.payJoiningFee(distributor.address, {
       from: coverHolder,
       value: fee
     });
     await mr.kycVerdict(distributor.address, true);
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1});
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2});
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3});
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1});
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2});
-    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder});
-    await distributor.nxmTokenApprove(tc.address, UNLIMITED_ALLOWANCE, {
-      from: coverHolder
-    });
+
+    await Promise.all([
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1}),
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2}),
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3}),
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1}),
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2}),
+      tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder}),
+      distributor.nxmTokenApprove(tc.address, UNLIMITED_ALLOWANCE, {
+        from: coverHolder
+      })
+    ])
 
     await tk.transfer(member1, ether('250'));
     await tk.transfer(member2, ether('250'));
@@ -192,10 +204,208 @@ describe('Distributor', function () {
     });
   })
 
-  
-  it('allows buying cover using ETH', async () => {
-    const { qt, master } =  this;
-    console.log(master);
+
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
+
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
+  });
+  it('allows buying cover using ETH', async function () {
+    const { qt, master, distributor } =  this;
     coverDetails[4] = '7972408607001';
     var vrsdata = await getQuoteValues(
       coverDetails,
