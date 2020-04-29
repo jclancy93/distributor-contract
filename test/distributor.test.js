@@ -144,26 +144,11 @@ describe('Distributor', function () {
     );
     (await pd.capReached()).toString().should.be.equal((1).toString());
 
-    // const payJoiningFees = [member1, member2, member3, staker1, staker2, coverHolder, coverHolder].map(async (member) => {
-    //   await mr.payJoiningFee(member, {from: member, value: fee});
-    //   await mr.kycVerdict(member, true);
-    // });
-    //
-    // await Promise.all(payJoiningFees);
-
-    await mr.payJoiningFee(member1, {from: member1, value: fee});
-    await mr.kycVerdict(member1, true);
-    await mr.payJoiningFee(member2, {from: member2, value: fee});
-    await mr.kycVerdict(member2, true);
-    await mr.payJoiningFee(member3, {from: member3, value: fee});
-    await mr.kycVerdict(member3, true);
-    await mr.payJoiningFee(staker1, {from: staker1, value: fee});
-    await mr.kycVerdict(staker1, true);
-    await mr.payJoiningFee(staker2, {from: staker2, value: fee});
-    await mr.kycVerdict(staker2, true);
-    await mr.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
-    await mr.kycVerdict(coverHolder, true);
-
+    const payJoiningFees = [member1, member2, member3, staker1, staker2, coverHolder].map(async (member) => {
+      await mr.payJoiningFee(member, {from: member, value: fee});
+      await mr.kycVerdict(member, true);
+    });
+    await Promise.all(payJoiningFees);
 
     await mr.payJoiningFee(distributor.address, {
       from: coverHolder,
@@ -183,13 +168,11 @@ describe('Distributor', function () {
       })
     ])
 
-    await tk.transfer(member1, ether('250'));
-    await tk.transfer(member2, ether('250'));
-    await tk.transfer(member3, ether('250'));
-    await tk.transfer(coverHolder, ether('250'));
-    await tk.transfer(distributor.address, ether('250'));
-    await tk.transfer(staker1, ether('250'));
-    await tk.transfer(staker2, ether('250'));
+    const transfers = [member1, member2, member3, staker1, staker2, coverHolder].map(async (member) => {
+      await tk.transfer(member, ether('250'));
+    });
+    await Promise.all(transfers);
+
     await tf.addStake(smartConAdd, stakeTokens, {from: staker1});
     await tf.addStake(smartConAdd, stakeTokens, {from: staker2});
     maxVotingTime = await cd.maxVotingTime();
