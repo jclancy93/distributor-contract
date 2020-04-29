@@ -122,9 +122,15 @@ async function setup () {
     true
   ); //testing
 
-  await mr.payJoiningFee(owner, { from: owner, value: ether('0.02') });
-  await mr.kycVerdict(owner, true);
-  await mr.addInitialABMembers([owner]);
+  let mrInstance = await MemberRoles.at(
+    await master.getLatestAddress('0x4d52')
+  );
+  await mrInstance.payJoiningFee(owner, {
+    from: owner,
+    value: '2000000000000000'
+  });
+  await mrInstance.kycVerdict(owner, true);
+  await mrInstance.addInitialABMembers([owner]);
 
   return { master };
 }
