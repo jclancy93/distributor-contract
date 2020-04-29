@@ -34,6 +34,7 @@ const POOL_ETHER = ether('3500');
 
 async function setup () {
 
+  console.log('setup');
   const owner = defaultSender;
 
   // deploy external contracts
@@ -133,7 +134,6 @@ async function setup () {
   await mrInstance.kycVerdict(owner, true, {
     from: owner,
   });
-  console.log('passed');
   await mrInstance.addInitialABMembers([owner]);
 
 
@@ -144,6 +144,7 @@ async function setup () {
   this.tk = tk;
   this.pd = pd;
   this.cd = cd;
+  this.qt = qt;
   this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
   this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
 

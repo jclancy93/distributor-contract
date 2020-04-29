@@ -6,6 +6,7 @@ const { expect } = require('chai');
 const Distributor = contract.fromArtifact('Distributor');
 
 const getValue = require('../nexusmutual-contracts/test/utils/getMCRPerThreshold.js').getValue;
+const getQuoteValues = require('../nexusmutual-contracts/test/utils/getQuote.js').getQuoteValues;
 
 const setup = require('./utils/setup');
 
@@ -121,16 +122,16 @@ describe('Distributor', function () {
   let claimId;
 
   beforeEach(async function () {
-    const { mr, mcr, pd, tk, tf, cd, tc, master } = this;
+    const { mr, mcr, pd, tk, tf, cd, tc, qt, master } = this;
 
-
+    console.log('init stakers');
     const distributor = await Distributor.new(master.address, distributorFeePercentage, {
       from: coverHolder
     });
     this.distributor = distributor;
 
     await mr.addMembersBeforeLaunch([], []);
-    expect(await mr.launched()).to.equal(true);
+    (await mr.launched()).should.be.equal(true);
     await mcr.addMCRData(
       await getValue(toWei('2'), pd, mcr),
       toWei('100'),
@@ -141,7 +142,7 @@ describe('Distributor', function () {
         from: owner
       }
     );
-    expect((await pd.capReached()).toString()).to.equal((1).toString());
+    (await pd.capReached()).toString().should.be.equal((1).toString());
 
     await mr.payJoiningFee(member1, {from: member1, value: fee});
     await mr.kycVerdict(member1, true);
@@ -180,15 +181,39 @@ describe('Distributor', function () {
     await tf.addStake(smartConAdd, stakeTokens, {from: staker1});
     await tf.addStake(smartConAdd, stakeTokens, {from: staker2});
     maxVotingTime = await cd.maxVotingTime();
+    await tc.lock(CLA, tokens, validity, {
+      from: member1
+    });
+    await tc.lock(CLA, tokens, validity, {
+      from: member2
+    });
+    await tc.lock(CLA, tokens, validity, {
+      from: member3
+    });
   })
 
-  describe('ETH covers', function () {
+  
+  it('allows buying cover using ETH', async () => {
+    const { qt, master } =  this;
+    console.log(master);
+    coverDetails[4] = '7972408607001';
+    var vrsdata = await getQuoteValues(
+      coverDetails,
+      toHex('ETH'),
+      coverPeriod,
+      smartConAdd,
+      qt.address
+    );
 
-
-    it('does nothing', async function () {
-    });
-
-    it('does nothing 2', async function () {
-    });
+    const buyCoverResponse1 = await distributor.buyCover(
+      smartConAdd,
+      toHex('ETH'),
+      coverDetails,
+      coverPeriod,
+      vrsdata[0],
+      vrsdata[1],
+      vrsdata[2],
+      {from: nftCoverHolder1, value: buyCoverValue.toString()}
+    );
   });
 });
