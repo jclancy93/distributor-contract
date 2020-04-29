@@ -26,8 +26,6 @@ const Governance = contract.fromArtifact('Governance');
 const ProposalCategory = contract.fromArtifact('ProposalCategory');
 const MemberRoles = contract.fromArtifact('MemberRoles');
 
-const Distributor = contract.fromArtifact('Distributor');
-
 const INITIAL_SUPPLY = ether('1500000');
 const EXCHANGE_TOKEN = ether('10000');
 const EXCHANGE_ETHER = ether('10');
@@ -79,8 +77,6 @@ async function setup () {
 
   const master = await NXMaster.new(tk.address);
 
-  const distributor = await Distributor.new(master.address, 10);
-
   const addresses = [
     qd.address,
     td.address,
@@ -104,12 +100,11 @@ async function setup () {
   let pcAddress = await master.getLatestAddress('0x5043');
   pc2 = await ProposalCategory.at(pcAddress);
   await pc2.proposalCategoryInitiate();
-  //await pc.proposalCategoryInitiate();
 
   // fund pools
   await p1.sendEther({ from: owner, value: POOL_ETHER });
   await p2.sendEther({ from: owner, value: POOL_ETHER });
-  // await dai.transfer(p2.address, ether('50'));
+  await dai.transfer(p2.address, ether('50'));
 
   await mcr.addMCRData(
     13000,
@@ -138,16 +133,19 @@ async function setup () {
   await mrInstance.kycVerdict(owner, true, {
     from: owner,
   });
+  console.log('passed');
   await mrInstance.addInitialABMembers([owner]);
+
 
   this.master = master;
   this.mcr = mcr;
   this.mr = mrInstance;
   this.tf = tf;
-  this.distributor = distributor;
   this.tk = tk;
   this.pd = pd;
-  this.tc = tc;
+  this.cd = cd;
+  this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
+  this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
 
   return { master };
 }

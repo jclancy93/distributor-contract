@@ -1,6 +1,9 @@
 const { contract, accounts, defaultSender, web3 } = require('@openzeppelin/test-environment');
 const { expectRevert, ether, time } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
++require('chai').should();
+
+const Distributor = contract.fromArtifact('Distributor');
 
 const getValue = require('../nexusmutual-contracts/test/utils/getMCRPerThreshold.js').getValue;
 
@@ -91,8 +94,8 @@ const submitClaimDaiDeposit = coverBaseDaiPrice
 describe('Distributor', function () {
   this.timeout(10000);
   beforeEach(setup);
+  const owner = defaultSender;
   const [
-    owner,
     member1,
     member2,
     member3,
@@ -118,8 +121,14 @@ describe('Distributor', function () {
   let claimId;
 
   beforeEach(async function () {
-    const owner = defaultSender
-    const { mr, mcr, pd, distributor, tk, tf, cd, tc } = this;
+    const { mr, mcr, pd, tk, tf, cd, tc, master } = this;
+
+
+    const distributor = await Distributor.new(master.address, distributorFeePercentage, {
+      from: coverHolder
+    });
+    this.distributor = distributor;
+
     await mr.addMembersBeforeLaunch([], []);
     expect(await mr.launched()).to.equal(true);
     await mcr.addMCRData(
@@ -133,8 +142,7 @@ describe('Distributor', function () {
       }
     );
     expect((await pd.capReached()).toString()).to.equal((1).toString());
-    // await mr.payJoiningFee(owner, { from: owner, value: fee });
-    // await mr.kycVerdict(owner, true);
+
     await mr.payJoiningFee(member1, {from: member1, value: fee});
     await mr.kycVerdict(member1, true);
     await mr.payJoiningFee(member2, {from: member2, value: fee});
