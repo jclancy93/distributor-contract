@@ -30,6 +30,7 @@ const INITIAL_SUPPLY = ether('1500000');
 const EXCHANGE_TOKEN = ether('10000');
 const EXCHANGE_ETHER = ether('10');
 const QE = '0x51042c4d8936a7764d18370a6a0762b860bb8e07';
+const POOL_ETHER = ether('3500');
 
 async function setup () {
 
@@ -102,25 +103,24 @@ async function setup () {
   //await pc.proposalCategoryInitiate();
 
   // fund pools
-  await p1.sendEther({ from: owner, value: ether('3500') });
-  await p2.sendEther({ from: owner, value: ether('3500') });
-  await dai.transfer(p2.address, ether('50'));
+  await p1.sendEther({ from: owner, value: POOL_ETHER });
+  await p2.sendEther({ from: owner, value: POOL_ETHER });
+  // await dai.transfer(p2.address, ether('50'));
 
   await mc.addMCRData(
     13000,
-    ether('100'),
-    ether('7000'),
-    [hex('ETH'), hex('DAI')],
+    '100000000000000000000',
+    '7000000000000000000000',
+    ['0x455448', '0x444149'],
     [100, 15517],
-    20190103,
+    20190103
   );
-
   await p2.saveIADetails(
-    [hex('ETH'), hex('DAI')],
+    ['0x455448', '0x444149'],
     [100, 15517],
     20190103,
-    true,
-  );
+    true
+  ); //testing
 
   await mr.payJoiningFee(owner, { from: owner, value: ether('0.02') });
   await mr.kycVerdict(owner, true);
