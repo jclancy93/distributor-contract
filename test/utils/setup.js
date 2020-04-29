@@ -95,7 +95,7 @@ async function setup () {
   ];
 
   await master.addNewVersion(addresses);
-  await pc.proposalCategoryInitiate();
+  // await pc.proposalCategoryInitiate();
 
   // fund pools
   await p1.sendEther({ from: owner, value: ether('3500') });

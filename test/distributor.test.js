@@ -70,6 +70,10 @@ describe('Distributor', function () {
 
 
   describe('ETH covers', function () {
+
+    beforeEach(async function () {
+      console.log('wtf')
+    })
     it('does nothing', async function () {
     });
   });
