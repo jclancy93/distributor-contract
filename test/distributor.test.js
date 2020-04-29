@@ -1,8 +1,43 @@
-const { contract, accounts, web3 } = require('@openzeppelin/test-environment');
+const { contract, accounts, defaultSender, web3 } = require('@openzeppelin/test-environment');
 const { expectRevert, ether, time } = require('@openzeppelin/test-helpers');
-const { assert } = require('chai');
+const { expect } = require('chai');
+
+const getValue = require('../nexusmutual-contracts/test/utils/getMCRPerThreshold.js').getValue;
 
 const setup = require('./utils/setup');
+
+
+const BN = web3.utils.BN;
+
+function toWei(value) {
+  return web3.utils.toWei(value, 'ether');
+}
+
+function toHex(value) {
+  return web3.utils.toHex(value);
+}
+
+
+const duration = {
+  seconds: function(val) {
+    return val;
+  },
+  minutes: function(val) {
+    return val * this.seconds(60);
+  },
+  hours: function(val) {
+    return val * this.minutes(60);
+  },
+  days: function(val) {
+    return val * this.hours(24);
+  },
+  weeks: function(val) {
+    return val * this.days(7);
+  },
+  years: function(val) {
+    return val * this.days(365);
+  }
+};
 
 
 const INITIAL_SUPPLY = ether('1500000');
@@ -68,12 +103,80 @@ describe('Distributor', function () {
     distributorFeeReceiver
   ] = accounts;
 
+  const P_18 = new BN(toWei('1').toString());
+  const stakeTokens = ether('5');
+  const tokens = ether('60');
+  const validity = duration.days('30');
+  const UNLIMITED_ALLOWANCE = new BN((2).toString())
+    .pow(new BN((256).toString()))
+    .sub(new BN((1).toString()));
+  const BOOK_TIME = new BN(duration.hours('13').toString());
+  let coverID;
+  let closingTime;
+  let minTime;
+  let maxVotingTime;
+  let claimId;
+
+  beforeEach(async function () {
+    const owner = defaultSender
+    const { mr, mcr, pd, distributor, tk, tf, cd, tc } = this;
+    await mr.addMembersBeforeLaunch([], []);
+    expect(await mr.launched()).to.equal(true);
+    await mcr.addMCRData(
+      await getValue(toWei('2'), pd, mcr),
+      toWei('100'),
+      toWei('2'),
+      ['0x455448', '0x444149'],
+      [100, 65407],
+      20181011, {
+        from: owner
+      }
+    );
+    expect((await pd.capReached()).toString()).to.equal((1).toString());
+    // await mr.payJoiningFee(owner, { from: owner, value: fee });
+    // await mr.kycVerdict(owner, true);
+    await mr.payJoiningFee(member1, {from: member1, value: fee});
+    await mr.kycVerdict(member1, true);
+    await mr.payJoiningFee(member2, {from: member2, value: fee});
+    await mr.kycVerdict(member2, true);
+    await mr.payJoiningFee(member3, {from: member3, value: fee});
+    await mr.kycVerdict(member3, true);
+    await mr.payJoiningFee(staker1, {from: staker1, value: fee});
+    await mr.kycVerdict(staker1, true);
+    await mr.payJoiningFee(staker2, {from: staker2, value: fee});
+    await mr.kycVerdict(staker2, true);
+    await mr.payJoiningFee(coverHolder, {from: coverHolder, value: fee});
+    await mr.kycVerdict(coverHolder, true);
+    await mr.payJoiningFee(distributor.address, {
+      from: coverHolder,
+      value: fee
+    });
+    await mr.kycVerdict(distributor.address, true);
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member1});
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member2});
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: member3});
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker1});
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: staker2});
+    await tk.approve(tc.address, UNLIMITED_ALLOWANCE, {from: coverHolder});
+    await distributor.nxmTokenApprove(tc.address, UNLIMITED_ALLOWANCE, {
+      from: coverHolder
+    });
+
+    await tk.transfer(member1, ether('250'));
+    await tk.transfer(member2, ether('250'));
+    await tk.transfer(member3, ether('250'));
+    await tk.transfer(coverHolder, ether('250'));
+    await tk.transfer(distributor.address, ether('250'));
+    await tk.transfer(staker1, ether('250'));
+    await tk.transfer(staker2, ether('250'));
+    await tf.addStake(smartConAdd, stakeTokens, {from: staker1});
+    await tf.addStake(smartConAdd, stakeTokens, {from: staker2});
+    maxVotingTime = await cd.maxVotingTime();
+  })
 
   describe('ETH covers', function () {
 
-    beforeEach(async function () {
-      console.log('wtf')
-    })
+
     it('does nothing', async function () {
     });
 

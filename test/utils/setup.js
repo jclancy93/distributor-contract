@@ -1,4 +1,4 @@
-const { contract, accounts } = require('@openzeppelin/test-environment');
+const { contract, accounts, defaultSender } = require('@openzeppelin/test-environment');
 const { ether } = require('@openzeppelin/test-helpers');
 const { hex } = require('./helpers');
 
@@ -26,6 +26,8 @@ const Governance = contract.fromArtifact('Governance');
 const ProposalCategory = contract.fromArtifact('ProposalCategory');
 const MemberRoles = contract.fromArtifact('MemberRoles');
 
+const Distributor = contract.fromArtifact('Distributor');
+
 const INITIAL_SUPPLY = ether('1500000');
 const EXCHANGE_TOKEN = ether('10000');
 const EXCHANGE_ETHER = ether('10');
@@ -34,7 +36,7 @@ const POOL_ETHER = ether('3500');
 
 async function setup () {
 
-  const owner = accounts[0];
+  const owner = defaultSender;
 
   // deploy external contracts
   const dai = await DAI.new();
@@ -61,7 +63,7 @@ async function setup () {
   const p2 = await Pool2.new(factory.address);
   const pd = await PoolData.new(owner, dsv.address, dai.address);
 
-  const mc = await MCR.new();
+  const mcr = await MCR.new();
 
   const tk = await NXMToken.new(owner, INITIAL_SUPPLY);
   const tc = await TokenController.new();
@@ -77,6 +79,8 @@ async function setup () {
 
   const master = await NXMaster.new(tk.address);
 
+  const distributor = await Distributor.new(master.address, 10);
+
   const addresses = [
     qd.address,
     td.address,
@@ -89,7 +93,7 @@ async function setup () {
     cr.address,
     p1.address,
     p2.address,
-    mc.address,
+    mcr.address,
     gv.address,
     pc.address,
     mr.address,
@@ -107,7 +111,7 @@ async function setup () {
   await p2.sendEther({ from: owner, value: POOL_ETHER });
   // await dai.transfer(p2.address, ether('50'));
 
-  await mc.addMCRData(
+  await mcr.addMCRData(
     13000,
     '100000000000000000000',
     '7000000000000000000000',
@@ -135,6 +139,15 @@ async function setup () {
     from: owner,
   });
   await mrInstance.addInitialABMembers([owner]);
+
+  this.master = master;
+  this.mcr = mcr;
+  this.mr = mrInstance;
+  this.tf = tf;
+  this.distributor = distributor;
+  this.tk = tk;
+  this.pd = pd;
+  this.tc = tc;
 
   return { master };
 }
