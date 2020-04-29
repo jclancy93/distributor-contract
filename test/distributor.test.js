@@ -30,6 +30,7 @@ const INITIAL_SUPPLY = '1500000000000000000000000';
 
 const EXCHANGE_TOKEN = '10000000000000000000000';
 const EXCHANGE_ETHER = 10 ** 19;
+const QE = '0x51042c4d8936a7764d18370a6a0762b860bb8e07';
 
 async function setup () {
 
@@ -37,7 +38,7 @@ async function setup () {
 
   const dai = await DAI.new();
   const mkr = await MKR.new();
-  await DSValue.new(founderAddress);
+  const dsv = await DSValue.new(founderAddress);
   const factory = await FactoryMock.new();
   const exchange = await ExchangeMock.new(
     dai.address,
@@ -55,18 +56,34 @@ async function setup () {
   await exchange.recieveEther({ value: EXCHANGE_ETHER });
   await exchangeMKR.recieveEther({ value: EXCHANGE_ETHER });
 
-  const nxmToken = await NXMToken.new(founderAddress, INITIAL_SUPPLY);
-  const nxMaster = await NXMaster.new(nxmToken.address);
   const distributorFeePercentage = 10;
+
+  await Claims.new();
+  await ClaimsData.new();
+  await ClaimsReward.new();
+  await Pool1.new();
+  await Pool2.new(factory.address);
+  await PoolData.new(founderAddress, dsv.address, dai.address);
+  await MCR.new();
+  const tokenController = await TokenController.new();
+  const nxmToken = await NXMToken.new(founderAddress, INITIAL_SUPPLY);
+  await TokenData.new(founderAddress);
+  await TokenFunctions.new();
+  await Quotation.new();
+  await QuotationDataMock.new( QE, founderAddress);
+  await Governance.new();
+  await ProposalCategory.new();
+  await MemberRoles.new();
+  const nxMaster = await NXMaster.new(nxmToken.address);
+
   const distributor = await Distributor.new(nxMaster.address, distributorFeePercentage);
 
 }
 
 describe('Distributor', function () {
-
+  this.timeout(10000);
   beforeEach(setup);
 
   it('does nothing', async function () {
-
   });
 });
