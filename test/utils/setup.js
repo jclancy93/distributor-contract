@@ -95,7 +95,11 @@ async function setup () {
   ];
 
   await master.addNewVersion(addresses);
-  // await pc.proposalCategoryInitiate();
+
+  let pcAddress = await master.getLatestAddress('0x5043');
+  pc2 = await ProposalCategory.at(pcAddress);
+  await pc2.proposalCategoryInitiate();
+  //await pc.proposalCategoryInitiate();
 
   // fund pools
   await p1.sendEther({ from: owner, value: ether('3500') });
