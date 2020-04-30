@@ -612,6 +612,81 @@ describe('Distributor', function () {
       (await cl.checkVoteClosing(claimId))
         .toString()
         .should.be.equal('-1');
-    })
+    });
+
+
+    it('should be able to withdraw DAI fee from all bought covers', async function() {
+      const { distributor, dai } = this;
+
+      const feeReceiverBalancePreWithdrawal = new web3.utils.BN(
+        await dai.balanceOf(distributorFeeReceiver)
+      );
+
+      const daiWithdrawableBalanceBefore = await distributor.withdrawableTokens.call(
+        toHex('DAI')
+      );
+
+      // 1 cover were bought
+      const withdrawnSum = buyCoverDaiFee.toString();
+      const r = await distributor.withdrawTokens(
+        distributorFeeReceiver,
+        withdrawnSum,
+        toHex('DAI'),
+        {
+          from: coverHolder
+        }
+      );
+      const daiWithdrawableBalanceAfter = await distributor.withdrawableTokens.call(
+        toHex('DAI')
+      );
+
+      const feeReceiverBalancePostWithdrawal = new web3.utils.BN(
+        await dai.balanceOf(distributorFeeReceiver)
+      );
+      const gain = feeReceiverBalancePostWithdrawal.sub(
+        feeReceiverBalancePreWithdrawal
+      );
+
+      const withdrawableDiff = daiWithdrawableBalanceBefore.sub(
+        daiWithdrawableBalanceAfter
+      );
+      withdrawableDiff.toString().should.be.equal(withdrawnSum);
+      gain.toString().should.be.equal(withdrawnSum);
+    });
+
+    it('token owner should be able to redeem claim', async function() {
+      const { distributor, dai } = this;
+
+      const balancePreRedeem = new web3.utils.BN(
+        await dai.balanceOf(nftCoverHolder1)
+      );
+      const redeemClaimsResponse = await distributor.redeemClaim(
+        firstTokenId,
+        {
+          from: nftCoverHolder1
+        }
+      );
+      const logs = Array.from(redeemClaimsResponse.logs);
+      const claimRedeemedEvent = logs.filter(
+        log => log.event === 'ClaimRedeemed'
+      )[0];
+
+      const expectedTotalClaimValue = new web3.utils.BN(coverDetailsDai[0]);
+
+      claimRedeemedEvent.args.receiver.should.be.equal(nftCoverHolder1);
+      claimRedeemedEvent.args.value
+        .toString()
+        .should.be.equal(expectedTotalClaimValue.toString());
+
+      const balancePostRedeem = new web3.utils.BN(
+        await dai.balanceOf(nftCoverHolder1)
+      );
+
+      const balanceGain = balancePostRedeem.sub(balancePreRedeem);
+
+      balanceGain
+        .toString()
+        .should.be.equal(expectedTotalClaimValue.toString());
+    });
   });
 });
