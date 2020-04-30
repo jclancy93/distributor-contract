@@ -198,10 +198,7 @@ describe('Distributor', function () {
 
   describe('ETH cover with rejected claim', function () {
     let firstTokenId;
-    let coverID;
-    let closingTime;
     let minTime;
-    let maxVotingTime;
     let claimId;
 
     before(setup);
@@ -244,7 +241,7 @@ describe('Distributor', function () {
         qt.address
       );
 
-      const buyCoverResponse2 = await distributor.buyCover(
+      await distributor.buyCover(
         smartConAdd,
         toHex('ETH'),
         coverDetails,
@@ -254,9 +251,6 @@ describe('Distributor', function () {
         vrsdata[2],
         {from: nftCoverHolder1, value: buyCoverValue.toString()}
       );
-
-      secondTokenId = getCoverDataFromBuyCoverLogs(buyCoverResponse2.logs)
-        .tokenId;
     });
 
     it('allows submitting a claim for the cover', async function () {
@@ -268,9 +262,6 @@ describe('Distributor', function () {
       const minVotingTime = await cd.minVotingTime();
       const now = await time.latest();
       minTime = new BN(minVotingTime.toString()).add(new BN(now.toString()));
-      await cl.getClaimFromNewStart(0, {from: member1});
-      await cl.getUserClaimByIndex(0, {from: distributor.address});
-      await cl.getClaimbyIndex(1, {from: distributor.address});
       claimId = (await cd.actualClaimLength()) - 1;
     });
 
@@ -399,6 +390,126 @@ describe('Distributor', function () {
         withdrawableETHPreSale
       );
       withdrawableGain.toString().should.be.equal(balanceGain.toString());
+    });
+  });
+
+
+  describe('ETH cover with accepted claim', function () {
+    before(setup);
+    before(initMembers);
+
+    let firstTokenId
+    let claimId
+    let minTime
+    before(async function() {
+      const { qt, distributor, cd } =  this;
+      coverDetails[4] = '7972408607001';
+      var vrsdata = await getQuoteValues(
+        coverDetails,
+        toHex('ETH'),
+        coverPeriod,
+        smartConAdd,
+        qt.address
+      );
+
+      const buyCoverResponse1 = await distributor.buyCover(
+        smartConAdd,
+        toHex('ETH'),
+        coverDetails,
+        coverPeriod,
+        vrsdata[0],
+        vrsdata[1],
+        vrsdata[2],
+        {from: nftCoverHolder1, value: buyCoverValue.toString()}
+      );
+
+      firstTokenId = getCoverDataFromBuyCoverLogs(buyCoverResponse1.logs)
+        .tokenId;
+
+      await distributor.submitClaim(firstTokenId, {
+        from: nftCoverHolder1
+      });
+
+      const minVotingTime = await cd.minVotingTime();
+      const now = await time.latest();
+      minTime = new BN(minVotingTime.toString()).add(new BN(now.toString()));
+      claimId = (await cd.actualClaimLength()) - 1;
+    });
+
+    it('should allow approval voting for submitted claim', async function() {
+      const { cl, pd, cd, p1, mcr } =  this;
+      await cl.submitCAVote(claimId, 1, {from: member1});
+      await cl.submitCAVote(claimId, 1, {from: member2});
+      await cl.submitCAVote(claimId, 1, {from: member3});
+      await cd.getVoteToken(claimId, 0, 1);
+      await cd.getVoteVoter(claimId, 1, 1);
+      let verdict = await cd.getVoteVerdict(claimId, 1, 1);
+      parseFloat(verdict).should.be.equal(1);
+
+      const now = await time.latest();
+      const maxVotingTime = await cd.maxVotingTime();
+      closingTime = new BN(maxVotingTime.toString()).add(
+        new BN(now.toString())
+      );
+      await time.increaseTo(
+        new BN(closingTime.toString()).add(new BN((6).toString()))
+      );
+
+      const apiCallLength = (await pd.getApilCallLength()) - 1;
+      let apiid = await pd.allAPIcall(apiCallLength);
+
+      priceinEther = await mcr.calculateTokenPrice(CA_ETH);
+      await p1.__callback(apiid, '');
+      const newCStatus = await cd.getClaimStatusNumber(claimId);
+      newCStatus[1].toString().should.be.equal((7).toString());
+      const claimData = await cl.getClaimbyIndex(claimId);
+
+      claimData.finalVerdict.toString().should.be.equal((1).toString());
+      claimData.status.toString().should.be.equal((7).toString());
+
+      (await cl.checkVoteClosing(claimId))
+        .toString()
+        .should.be.equal((-1).toString());
+    });
+
+    it('token owner should be able to redeem claim', async function() {
+      const { distributor } = this;
+      const balancePreRedeem = new web3.utils.BN(
+        await web3.eth.getBalance(nftCoverHolder1)
+      );
+      const redeemClaimsResponse = await distributor.redeemClaim(
+        firstTokenId,
+        {
+          from: nftCoverHolder1
+        }
+      );
+      const logs = Array.from(redeemClaimsResponse.logs);
+      const claimRedeemedEvent = logs.filter(
+        log => log.event === 'ClaimRedeemed'
+      )[0];
+
+      const expectedTotalClaimValue = new web3.utils.BN(coverDetails[0]);
+
+      claimRedeemedEvent.args.receiver.should.be.equal(nftCoverHolder1);
+      claimRedeemedEvent.args.value
+        .toString()
+        .should.be.equal(expectedTotalClaimValue.toString());
+
+      const balancePostRedeem = new web3.utils.BN(
+        await web3.eth.getBalance(nftCoverHolder1)
+      );
+
+      const tx = await web3.eth.getTransaction(redeemClaimsResponse.tx);
+      const gasCost = new web3.utils.BN(tx.gasPrice).mul(
+        new web3.utils.BN(redeemClaimsResponse.receipt.gasUsed)
+      );
+      const balanceGain = balancePostRedeem
+        .add(gasCost)
+        .sub(balancePreRedeem);
+
+      balanceGain
+        .toString()
+        .should.be.equal(expectedTotalClaimValue.toString());
     });
   });
 });
