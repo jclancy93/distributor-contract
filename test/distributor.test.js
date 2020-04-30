@@ -211,7 +211,7 @@ describe('Distributor', function () {
       claimId = (await cd.actualClaimLength()) - 1;
     });
 
-    it('fails to submit another claim once a claim is currently in progress for a token', async function () {
+    it('does not allow token owner to submit another claim if a claim is currently in progress', async function () {
       const { distributor } = this;
       await expectRevert(
         distributor.submitClaim(firstTokenId, {
@@ -219,7 +219,7 @@ describe('Distributor', function () {
         }), 'Can submit another claim only if the previous one was denied.');
     });
 
-    it('should return token data for token with claim in progress', async function () {
+    it('returns token data for token with claim in progress', async function () {
       const { distributor } = this;
       const tokenData = await distributor.tokens.call(firstTokenId);
 
@@ -241,7 +241,7 @@ describe('Distributor', function () {
       tokenData.claimId.toString().should.be.equal(claimId.toString());
     });
 
-    it('should allow voting rejection', async function () {
+    it('allows voting rejection', async function () {
       const { cl, cd, pd, p1, td } = this;
       (await cl.checkVoteClosing(claimId))
         .toString()
@@ -279,7 +279,7 @@ describe('Distributor', function () {
         .should.be.equal((-1).toString());
     });
 
-    it('should not allow cover holder to redeemClaim after rejection', async function () {
+    it('does not allow token holder to redeemClaim after rejection', async function () {
       const { distributor } = this;
       await expectRevert(
         distributor.redeemClaim(firstTokenId, {
@@ -288,7 +288,7 @@ describe('Distributor', function () {
       );
     });
 
-    it('should accept a second claim after the first rejected one', async function () {
+    it('allows a second claim after the first rejected one', async function () {
       const { distributor } = this;
       await distributor.submitClaim(firstTokenId, {
         from: nftCoverHolder1,
@@ -320,7 +320,7 @@ describe('Distributor', function () {
       gain.toString().should.be.equal(withdrawnSum);
     });
 
-    it('should be able to sell NXM tokens for ETH', async function () {
+    it('allows owner to sell NXM tokens for ETH', async function () {
       const { distributor, mcr } = this;
       const maxSellTokens = await mcr.getMaxSellTokens();
       const sellAmount = maxSellTokens;
@@ -388,7 +388,7 @@ describe('Distributor', function () {
       claimId = (await cd.actualClaimLength()) - 1;
     });
 
-    it('should allow approval voting for submitted claim', async function () {
+    it('allows approval voting', async function () {
       const { cl, pd, cd, p1, mcr } = this;
       await cl.submitCAVote(claimId, 1, { from: member1 });
       await cl.submitCAVote(claimId, 1, { from: member2 });
@@ -424,7 +424,7 @@ describe('Distributor', function () {
         .should.be.equal((-1).toString());
     });
 
-    it('should allow token owner should be able to redeem claim', async function () {
+    it('allows token owner to redeem claim', async function () {
       const { distributor } = this;
       const balancePreRedeem = new web3.utils.BN(
         await web3.eth.getBalance(nftCoverHolder1),
@@ -519,7 +519,7 @@ describe('Distributor', function () {
       claimId = (await cd.actualClaimLength()) - 1;
     });
 
-    it('should allow approval voting', async function () {
+    it('allows approval voting', async function () {
       const { cd, cl, pd, mcr, p1, dai } = this;
       (await cl.checkVoteClosing(claimId))
         .toString()
@@ -560,7 +560,7 @@ describe('Distributor', function () {
         .should.be.equal('-1');
     });
 
-    it('should allow owner to withdraw DAI fee from all bought covers', async function () {
+    it('allows owner to withdraw DAI fee from all bought covers', async function () {
       const { distributor, dai } = this;
 
       const feeReceiverBalancePreWithdrawal = new web3.utils.BN(
@@ -599,7 +599,7 @@ describe('Distributor', function () {
       gain.toString().should.be.equal(withdrawnSum);
     });
 
-    it('should allow token owner should be able to redeem claim', async function () {
+    it('allows token owner to redeem claim', async function () {
       const { distributor, dai } = this;
 
       const balancePreRedeem = new web3.utils.BN(
