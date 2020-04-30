@@ -136,7 +136,10 @@ async function setup () {
   });
   await mrInstance.addInitialABMembers([owner]);
 
+  // third-party contracts
+  this.dai = dai;
 
+  // nexusmutual contracts
   this.master = master;
   this.mcr = mcr;
   this.mr = mrInstance;
@@ -151,8 +154,6 @@ async function setup () {
   this.td = td;
   this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
   this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
-
-  return { master };
 }
 
 module.exports = setup;

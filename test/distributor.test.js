@@ -1,7 +1,7 @@
 const { contract, accounts, defaultSender, web3 } = require('@openzeppelin/test-environment');
 const { expectRevert, ether, time } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
-+require('chai').should();
+require('chai').should();
 
 const Distributor = contract.fromArtifact('Distributor');
 
@@ -9,6 +9,7 @@ const getValue = require('../nexusmutual-contracts/test/utils/getMCRPerThreshold
 const getQuoteValues = require('../nexusmutual-contracts/test/utils/getQuote.js').getQuoteValues;
 
 const setup = require('./utils/setup');
+const { hex } = require('./utils/helpers');
 
 
 const BN = web3.utils.BN;
@@ -511,5 +512,62 @@ describe('Distributor', function () {
         .toString()
         .should.be.equal(expectedTotalClaimValue.toString());
     });
+  });
+
+
+  describe('DAI cover with accepted claim', function () {
+    before(setup);
+    before(initMembers);
+
+    let firstTokenId;
+
+    before(async function() {
+      const { dai } = this;
+      await dai.transfer(nftCoverHolder1, toWei('2000'));
+    })
+
+
+    it('allows buying cover with DAI', async function () {
+      const { dai, distributor, qt } = this;
+      await dai.approve(distributor.address, buyCoverDaiValue, {
+        from: nftCoverHolder1
+      });
+      coverDetailsDai[4] = '7972408607006';
+      var vrsdata = await getQuoteValues(
+        coverDetailsDai,
+        hex('DAI'),
+        coverPeriod,
+        smartConAdd,
+        qt.address
+      );
+
+      const buyCoverUsingDAIResponse = await distributor.buyCover(
+        smartConAdd,
+        hex('DAI'),
+        coverDetailsDai,
+        coverPeriod,
+        vrsdata[0],
+        vrsdata[1],
+        vrsdata[2],
+        {from: nftCoverHolder1}
+      );
+
+      firstTokenId = getCoverDataFromBuyCoverLogs(
+        buyCoverUsingDAIResponse.logs
+      ).tokenId;
+
+    });
+
+    it('Allows submitting a claim for the cover', async function () {
+      const { cd, distributor, cl } = this;
+      await distributor.submitClaim(firstTokenId, {
+        from: nftCoverHolder1
+      });
+
+      const minVotingTime = await cd.minVotingTime();
+      const now = await time.latest();
+      minTime = new BN(minVotingTime.toString()).add(new BN(now.toString()));
+      claimId = (await cd.actualClaimLength()) - 1;
+    })
   });
 });
