@@ -558,7 +558,7 @@ describe('Distributor', function () {
 
     });
 
-    it('Allows submitting a claim for the cover', async function () {
+    it('allows submitting a claim for the cover', async function () {
       const { cd, distributor, cl } = this;
       await distributor.submitClaim(firstTokenId, {
         from: nftCoverHolder1
@@ -568,6 +568,50 @@ describe('Distributor', function () {
       const now = await time.latest();
       minTime = new BN(minVotingTime.toString()).add(new BN(now.toString()));
       claimId = (await cd.actualClaimLength()) - 1;
+    });
+
+
+    it('should allow approval voting', async function () {
+      const { cd, cl, pd, mcr, p1, dai } = this;
+      (await cl.checkVoteClosing(claimId))
+        .toString()
+        .should.be.equal((0).toString());
+
+      await cl.submitCAVote(claimId, 1, {from: member1});
+      await cl.submitCAVote(claimId, 1, {from: member2});
+      await cl.submitCAVote(claimId, 1, {from: member3});
+      await cd.getVoteToken(claimId, 0, 1);
+      await cd.getVoteVoter(claimId, 1, 1);
+      let verdict = await cd.getVoteVerdict(claimId, 1, 1);
+      parseFloat(verdict).should.be.equal(1);
+
+      const now = await time.latest();
+      const maxVotingTime = await cd.maxVotingTime();
+      closingTime = new BN(maxVotingTime.toString()).add(
+        new BN(now.toString())
+      );
+      await time.increaseTo(
+        new BN(closingTime.toString()).add(new BN((6).toString()))
+      );
+
+      // change claim status
+      let apiid = await pd.allAPIcall((await pd.getApilCallLength()) - 1);
+      priceinEther = await mcr.calculateTokenPrice(CA_ETH);
+      await p1.__callback(apiid, '');
+      const newCStatus = await cd.getClaimStatusNumber(claimId);
+      newCStatus[1].toString().should.be.equal('12');
+
+      // trigger payout
+      let apiid2 = await pd.allAPIcall((await pd.getApilCallLength()) - 1);
+      priceinEther = await mcr.calculateTokenPrice(CA_ETH);
+      await dai.transfer(p1.address, toWei('20'));
+      await p1.__callback(apiid2, '');
+      const newCStatus2 = await cd.getClaimStatusNumber(claimId);
+      newCStatus2[1].toString().should.be.equal('14');
+
+      (await cl.checkVoteClosing(claimId))
+        .toString()
+        .should.be.equal('-1');
     })
   });
 });
