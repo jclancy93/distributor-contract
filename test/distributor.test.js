@@ -1,16 +1,11 @@
 const { contract, accounts, defaultSender, web3 } = require('@openzeppelin/test-environment');
 const { expectRevert, ether, time } = require('@openzeppelin/test-helpers');
-const { expect } = require('chai');
 require('chai').should();
-
-const Distributor = contract.fromArtifact('Distributor');
-
-const getValue = require('../nexusmutual-contracts/test/utils/getMCRPerThreshold.js').getValue;
-const getQuoteValues = require('../nexusmutual-contracts/test/utils/getQuote.js').getQuoteValues;
-
 const setup = require('./utils/setup');
 const { hex } = require('./utils/helpers');
+const { getQuoteValues, getValue } = require('./utils/external');
 
+const Distributor = contract.fromArtifact('Distributor');
 
 const BN = web3.utils.BN;
 
