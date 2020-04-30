@@ -22,44 +22,14 @@ function toHex(value) {
   return web3.utils.toHex(value);
 }
 
-
-const duration = {
-  seconds: function(val) {
-    return val;
-  },
-  minutes: function(val) {
-    return val * this.seconds(60);
-  },
-  hours: function(val) {
-    return val * this.minutes(60);
-  },
-  days: function(val) {
-    return val * this.hours(24);
-  },
-  weeks: function(val) {
-    return val * this.days(7);
-  },
-  years: function(val) {
-    return val * this.days(365);
-  }
-};
-
 const CA_ETH = '0x45544800';
 const CLA = '0x434c41';
 const fee = ether('0.002');
 const smartConAdd = '0xd0a6e6c54dbc68db5db3a091b171a77407ff7ccf';
 const coverPeriod = 61;
 const coverDetails = [10, '3362445813369838', '744892736679184', '7972408607'];
-const v = 28;
-const r = '0x66049184fb1cf394862cca6c3b2a0c462401a671d0f2b20597d121e56768f90a';
-const s = '0x4c28c8f8ff0548dd3a41d7c75621940eb4adbac13696a2796e98a59691bf53ff';
 
 const coverDetailsDai = [5, '16812229066849188', '5694231991898', '7972408607'];
-const vrs_dai = [
-  27,
-  '0xdcaa177410672d90890f1c0a42a965b3af9026c04caedbce9731cb43827e8556',
-  '0x2b9f34e81cbb79f9af4b8908a7ef8fdb5875dedf5a69f84cd6a80d2a4cc8efff'
-];
 
 const distributorFeePercentage = 10;
 const percentageDenominator = 100;
@@ -98,16 +68,16 @@ describe('Distributor', function () {
     nftCoverHolder1,
     distributorFeeReceiver
   ] = accounts;
-  
+
   const stakeTokens = ether('5');
   const tokens = ether('60');
-  const validity = duration.days('30');
-  const UNLIMITED_ALLOWANCE = new BN((2).toString())
-    .pow(new BN((256).toString()))
-    .sub(new BN((1).toString()));
+  const validity = 30 * 24 * 60 * 60; // 30 days
+  const UNLIMITED_ALLOWANCE = new BN('2')
+    .pow(new BN('256'))
+    .sub(new BN('1'));
 
   async function initMembers() {
-    const {mr, mcr, pd, tk, tf, cd, tc, qt, master} = this;
+    const {mr, mcr, pd, tk, tf, cd, tc, master} = this;
 
     const distributor = await Distributor.new(master.address, distributorFeePercentage, {
       from: coverHolder
@@ -609,7 +579,7 @@ describe('Distributor', function () {
         toHex('DAI')
       );
 
-      // 1 cover were bought
+      // 1 cover was bought
       const withdrawnSum = buyCoverDaiFee.toString();
       const r = await distributor.withdrawTokens(
         distributorFeeReceiver,
