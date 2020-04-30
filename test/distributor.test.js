@@ -44,17 +44,9 @@ const duration = {
   }
 };
 
-
-const INITIAL_SUPPLY = ether('1500000');
-const EXCHANGE_TOKEN = ether('10000');
-const EXCHANGE_ETHER = ether('10');
-const QE = '0x51042c4d8936a7764d18370a6a0762b860bb8e07';
-
-
 const CA_ETH = '0x45544800';
 const CLA = '0x434c41';
 const fee = ether('0.002');
-const PID = 0;
 const smartConAdd = '0xd0a6e6c54dbc68db5db3a091b171a77407ff7ccf';
 const coverPeriod = 61;
 const coverDetails = [10, '3362445813369838', '744892736679184', '7972408607'];
@@ -72,25 +64,18 @@ const vrs_dai = [
 const distributorFeePercentage = 10;
 const percentageDenominator = 100;
 const coverPriceMultiplier = percentageDenominator + distributorFeePercentage;
-const claimSubmitDepositPercentage = 5;
 
 const coverBasePrice = new web3.utils.BN(coverDetails[1]);
 const buyCoverValue = coverBasePrice
   .mul(new web3.utils.BN(coverPriceMultiplier))
   .div(new web3.utils.BN(percentageDenominator));
 const buyCoverFee = buyCoverValue.sub(coverBasePrice);
-const submitClaimDeposit = coverBasePrice
-  .mul(new web3.utils.BN(claimSubmitDepositPercentage))
-  .div(new web3.utils.BN(percentageDenominator));
 
 const coverBaseDaiPrice = new web3.utils.BN(coverDetailsDai[1]);
 const buyCoverDaiValue = coverBaseDaiPrice
   .mul(new web3.utils.BN(coverPriceMultiplier))
   .div(new web3.utils.BN(percentageDenominator));
 const buyCoverDaiFee = buyCoverDaiValue.sub(coverBaseDaiPrice);
-const submitClaimDaiDeposit = coverBaseDaiPrice
-  .mul(new web3.utils.BN(claimSubmitDepositPercentage))
-  .div(new web3.utils.BN(percentageDenominator));
 
 function getCoverDataFromBuyCoverLogs(logs) {
   logs = Array.from(logs);
@@ -113,15 +98,13 @@ describe('Distributor', function () {
     nftCoverHolder1,
     distributorFeeReceiver
   ] = accounts;
-
-  const P_18 = new BN(toWei('1').toString());
+  
   const stakeTokens = ether('5');
   const tokens = ether('60');
   const validity = duration.days('30');
   const UNLIMITED_ALLOWANCE = new BN((2).toString())
     .pow(new BN((256).toString()))
     .sub(new BN((1).toString()));
-  const BOOK_TIME = new BN(duration.hours('13').toString());
 
   async function initMembers() {
     const {mr, mcr, pd, tk, tf, cd, tc, qt, master} = this;
@@ -255,7 +238,7 @@ describe('Distributor', function () {
     });
 
     it('allows submitting a claim for the cover', async function () {
-      const { distributor, cl, cd } =  this;
+      const { distributor, cd } =  this;
       await distributor.submitClaim(firstTokenId, {
         from: nftCoverHolder1
       });
@@ -453,7 +436,7 @@ describe('Distributor', function () {
         new BN(now.toString())
       );
       await time.increaseTo(
-        new BN(closingTime.toString()).add(new BN((6).toString()))
+        new BN(closingTime.toString()).add(new BN('6'))
       );
 
       const apiCallLength = (await pd.getApilCallLength()) - 1;
@@ -465,8 +448,8 @@ describe('Distributor', function () {
       newCStatus[1].toString().should.be.equal((7).toString());
       const claimData = await cl.getClaimbyIndex(claimId);
 
-      claimData.finalVerdict.toString().should.be.equal((1).toString());
-      claimData.status.toString().should.be.equal((7).toString());
+      claimData.finalVerdict.toString().should.be.equal('1');
+      claimData.status.toString().should.be.equal('7');
 
       (await cl.checkVoteClosing(claimId))
         .toString()
@@ -591,7 +574,7 @@ describe('Distributor', function () {
         new BN(now.toString())
       );
       await time.increaseTo(
-        new BN(closingTime.toString()).add(new BN((6).toString()))
+        new BN(closingTime.toString()).add(new BN('6'))
       );
 
       // change claim status
