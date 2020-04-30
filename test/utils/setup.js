@@ -145,6 +145,10 @@ async function setup () {
   this.pd = pd;
   this.cd = cd;
   this.qt = qt;
+  this.cl = cl;
+  this.p1 = p1;
+  this.p2 = p2;
+  this.td = td;
   this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
   this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
 
