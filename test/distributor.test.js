@@ -17,7 +17,7 @@ function toHex (value) {
   return web3.utils.toHex(value);
 }
 
-const CLA = '0x434c41';
+const LOCK_REASON_CLAIM = '0x434c41';
 const fee = ether('0.002');
 const smartConAdd = '0xd0a6e6c54dbc68db5db3a091b171a77407ff7ccf';
 const coverPeriod = 61;
@@ -130,13 +130,13 @@ describe('Distributor', function () {
     await tf.addStake(smartConAdd, stakeTokens, { from: staker1 });
     await tf.addStake(smartConAdd, stakeTokens, { from: staker2 });
     maxVotingTime = await cd.maxVotingTime();
-    await tc.lock(CLA, tokens, validity, {
+    await tc.lock(LOCK_REASON_CLAIM, tokens, validity, {
       from: member1,
     });
-    await tc.lock(CLA, tokens, validity, {
+    await tc.lock(LOCK_REASON_CLAIM, tokens, validity, {
       from: member2,
     });
-    await tc.lock(CLA, tokens, validity, {
+    await tc.lock(LOCK_REASON_CLAIM, tokens, validity, {
       from: member3,
     });
   }
