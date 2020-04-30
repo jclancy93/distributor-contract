@@ -33,8 +33,6 @@ const QE = '0x51042c4d8936a7764d18370a6a0762b860bb8e07';
 const POOL_ETHER = ether('3500');
 
 async function setup () {
-
-  console.log('setup');
   const owner = defaultSender;
 
   // deploy external contracts
@@ -98,7 +96,7 @@ async function setup () {
 
   await master.addNewVersion(addresses);
 
-  let pcAddress = await master.getLatestAddress(hex('PC'));
+  const pcAddress = await master.getLatestAddress(hex('PC'));
   pcInstance = await ProposalCategory.at(pcAddress);
   await pcInstance.proposalCategoryInitiate();
 
@@ -114,22 +112,22 @@ async function setup () {
     [hex('ETH'), hex('DAI')],
     [100, 15517],
     20190103,
-    { from: owner }
+    { from: owner },
   );
   await p2.saveIADetails(
     [hex('ETH'), hex('DAI')],
     [100, 15517],
     20190103,
     true,
-    { from: owner }
-  ); //testing
+    { from: owner },
+  ); // testing
 
-  let mrInstance = await MemberRoles.at(
-    await master.getLatestAddress(hex('MR'))
+  const mrInstance = await MemberRoles.at(
+    await master.getLatestAddress(hex('MR')),
   );
   await mrInstance.payJoiningFee(owner, {
     from: owner,
-    value: ether('0.002')
+    value: ether('0.002'),
   });
   await mrInstance.kycVerdict(owner, true, {
     from: owner,
@@ -153,7 +151,7 @@ async function setup () {
   this.td = td;
   this.mr = mrInstance;
   this.pc = pcInstance;
-  this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
+  this.tc = await TokenController.at(await master.getLatestAddress(hex('TC')));
   this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
 }
 

@@ -13,9 +13,9 @@ module.exports = {
     },
     kovan: {
       provider: () => new HDWalletProvider(
-        mnemonic, `https://kovan.infura.io/v3/${projectId}`
-       ),
-      networkId: 42
-    }
+        mnemonic, `https://kovan.infura.io/v3/${projectId}`,
+      ),
+      networkId: 42,
+    },
   },
 };

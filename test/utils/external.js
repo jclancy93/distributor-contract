@@ -3,5 +3,5 @@ const getQuoteValues = require('../../nexusmutual-contracts/test/utils/getQuote.
 
 module.exports = {
   getValue,
-  getQuoteValues
-}
+  getQuoteValues,
+};
