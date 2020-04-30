@@ -98,9 +98,9 @@ async function setup () {
 
   await master.addNewVersion(addresses);
 
-  let pcAddress = await master.getLatestAddress('0x5043');
-  pc2 = await ProposalCategory.at(pcAddress);
-  await pc2.proposalCategoryInitiate();
+  let pcAddress = await master.getLatestAddress(hex('PC'));
+  pcInstance = await ProposalCategory.at(pcAddress);
+  await pcInstance.proposalCategoryInitiate();
 
   // fund pools
   await p1.sendEther({ from: owner, value: POOL_ETHER });
@@ -109,15 +109,15 @@ async function setup () {
 
   await mcr.addMCRData(
     13000,
-    '100000000000000000000',
-    '7000000000000000000000',
-    ['0x455448', '0x444149'],
+    ether('1000'),
+    ether('70000'),
+    [hex('ETH'), hex('DAI')],
     [100, 15517],
     20190103,
     { from: owner }
   );
   await p2.saveIADetails(
-    ['0x455448', '0x444149'],
+    [hex('ETH'), hex('DAI')],
     [100, 15517],
     20190103,
     true,
@@ -125,11 +125,11 @@ async function setup () {
   ); //testing
 
   let mrInstance = await MemberRoles.at(
-    await master.getLatestAddress('0x4d52')
+    await master.getLatestAddress(hex('MR'))
   );
   await mrInstance.payJoiningFee(owner, {
     from: owner,
-    value: '2000000000000000'
+    value: ether('0.002')
   });
   await mrInstance.kycVerdict(owner, true, {
     from: owner,
@@ -142,7 +142,6 @@ async function setup () {
   // nexusmutual contracts
   this.master = master;
   this.mcr = mcr;
-  this.mr = mrInstance;
   this.tf = tf;
   this.tk = tk;
   this.pd = pd;
@@ -152,6 +151,8 @@ async function setup () {
   this.p1 = p1;
   this.p2 = p2;
   this.td = td;
+  this.mr = mrInstance;
+  this.pc = pcInstance;
   this.tc =  await TokenController.at(await master.getLatestAddress(hex('TC')));
   this.gv = await Governance.at(await master.getLatestAddress(hex('GV')));
 }
