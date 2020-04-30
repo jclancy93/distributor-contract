@@ -17,7 +17,6 @@ function toHex (value) {
   return web3.utils.toHex(value);
 }
 
-const CA_ETH = '0x45544800';
 const CLA = '0x434c41';
 const fee = ether('0.002');
 const smartConAdd = '0xd0a6e6c54dbc68db5db3a091b171a77407ff7ccf';
@@ -410,7 +409,6 @@ describe('Distributor', function () {
       const apiCallLength = (await pd.getApilCallLength()) - 1;
       const apiCallId = await pd.allAPIcall(apiCallLength);
 
-      priceinEther = await mcr.calculateTokenPrice(CA_ETH);
       await p1.__callback(apiCallId, '');
       const newCStatus = await cd.getClaimStatusNumber(claimId);
       newCStatus[1].toString().should.be.equal((7).toString());
