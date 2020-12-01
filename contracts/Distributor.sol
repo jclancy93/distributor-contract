@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@nexusmutual/cover-api/contracts/NexusMutualCover.sol";
 
 
 contract Distributor is
@@ -13,7 +12,6 @@ contract Distributor is
   Ownable,
   ReentrancyGuard {
 
-  using NexusMutualCover for NexusMutualCover.Data;
 
   struct Token {
     uint expirationTimestamp;
@@ -36,7 +34,6 @@ contract Distributor is
 
   bytes4 internal constant ethCurrency = "ETH";
 
-  NexusMutualCover.Data coverAPI;
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
@@ -45,7 +42,7 @@ contract Distributor is
 
   constructor(address _masterAddress, uint _distributorFeePercentage) public {
     distributorFeePercentage = _distributorFeePercentage;
-    coverAPI.setMasterAddress(_masterAddress);
+    // TODO: set master address
   }
 
   // Arguments to be passed as coverDetails, from the quote api:
@@ -72,16 +69,19 @@ contract Distributor is
     if (coverCurrency == "ETH") {
       require(msg.value == requiredValue, "Incorrect value sent");
     } else {
-      IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(coverCurrency));
-      require(erc20.transferFrom(msg.sender, address(this), requiredValue), "Transfer failed");
+      // TODO: erc20 handle
     }
 
-    uint coverId = coverAPI.buyCover(coveredContractAddress, coverCurrency, coverDetails, coverPeriod, _v, _r, _s);
+
+    // TODO: fix
+    uint coverId = 0;
     withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
 
     // mint token
     uint256 nextTokenId = issuedTokensCount++;
-    uint expirationTimestamp = block.timestamp + coverAPI.getLockTokenTimeAfterCoverExpiry() + coverPeriod * 1 days;
+
+    // TODO: fix
+    uint expirationTimestamp = 0;
     tokens[nextTokenId] = Token(expirationTimestamp,
       coverCurrency,
       coverDetails[0],
@@ -102,13 +102,17 @@ contract Distributor is
 
     if (tokens[tokenId].claimInProgress) {
       uint8 coverStatus;
-      (, coverStatus, , , ) = coverAPI.getCover(tokens[tokenId].coverId);
-      require(coverStatus == uint8(NexusMutualCover.CoverStatus.ClaimDenied),
+
+      // TODO: fix
+      coverStatus = 0;
+      // TODO: fix for denied of accepted
+      require(coverStatus == 1,
         "Can submit another claim only if the previous one was denied.");
     }
     require(tokens[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
 
-    uint claimId = coverAPI.submitClaim(tokens[tokenId].coverId);
+    // TODO: fix
+    uint claimId = 0;
 
     tokens[tokenId].claimInProgress = true;
     tokens[tokenId].claimId = claimId;
@@ -124,10 +128,14 @@ contract Distributor is
     require(tokens[tokenId].claimInProgress, "No claim is in progress");
     uint8 coverStatus;
     uint sumAssured;
-    (, coverStatus, sumAssured, , ) = coverAPI.getCover(tokens[tokenId].coverId);
+    // TODO: fix fetching of status and sumAssured
 
-    require(coverStatus == uint8(NexusMutualCover.CoverStatus.ClaimAccepted), "Claim is not accepted");
-    require(coverAPI.payoutIsCompleted(tokens[tokenId].coverId), "Claim accepted but payout not completed");
+    // TODO: check for status accepted
+    require(coverStatus == 1, "Claim is not accepted");
+
+    // TODO: fix
+    bool payoutIsCompleted = false;
+    require(payoutIsCompleted, "Claim accepted but payout not completed");
 
     _burn(tokenId);
     _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
@@ -143,21 +151,22 @@ contract Distributor is
     if (coverCurrency == ethCurrency) {
       msg.sender.transfer(sumAssured);
     } else {
-      IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(coverCurrency));
+      // TODO: fix
+      IERC20 erc20;
       require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
     }
   }
 
   function getCoverStatus(uint256 tokenId) external view returns (uint8 coverStatus, bool payoutCompleted) {
-    (, coverStatus, , , ) = coverAPI.getCover(tokens[tokenId].coverId);
-    payoutCompleted = coverAPI.payoutIsCompleted(tokenId);
+    // TODO: fix
   }
 
   function nxmTokenApprove(address _spender, uint256 _value)
   public
   onlyOwner
   {
-    IERC20 nxmToken = IERC20(coverAPI.getTokenAddress());
+    // TODO: see if it can be done through proxy
+    IERC20 nxmToken;
     nxmToken.approve(_spender, _value);
   }
 
@@ -179,7 +188,8 @@ contract Distributor is
     require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
     withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
 
-    IERC20 erc20 = IERC20(coverAPI.getCurrencyAssetAddress(_currency));
+    // TODO: fix
+    IERC20 erc20;
     require(erc20.transfer(_recipient, _amount), "Transfer failed");
   }
 
@@ -187,7 +197,8 @@ contract Distributor is
     external
     onlyOwner
   {
-    uint ethValue = coverAPI.sellNXMTokens(amount);
+    // TODO: see if it can be sold through proxy
+    uint ethValue;
     withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
