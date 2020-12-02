@@ -50,9 +50,7 @@ module.exports = {
 
   solidity: {
     compilers: [
-      { version: '0.5.17' }, // nexus mutual
-      { version: '0.5.16' }, // uniswap v2 core
-      { version: '0.6.6' }, // uniswap v2 peripherals
+      { version: '0.7.4' } // distributor
     ],
   },
 };

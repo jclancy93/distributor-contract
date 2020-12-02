@@ -28,7 +28,7 @@
   "homepage": "https://github.com/NexusMutual/distributor-contract#readme",
   "dependencies": {
     "@openzeppelin/contract-loader": "^0.6.1",
-    "@openzeppelin/contracts": "^2.5.1",
+    "@openzeppelin/contracts": "^3.3.0",
     "@openzeppelin/test-helpers": "^0.5.9"
   },
   "devDependencies": {

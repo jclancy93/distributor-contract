@@ -1,17 +1,19 @@
-pragma solidity ^0.5.17;
+pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract Distributor is
-  ERC721Full("NXMDistributorNFT", "NXMDNFT"),
+  ERC721("NXMDistributorNFT", "NXMDNFT"),
   Ownable,
   ReentrancyGuard {
-
+  using SafeMath for uint;
+  using SafeERC20 for IERC20;
 
   struct Token {
     uint expirationTimestamp;
@@ -30,6 +32,22 @@ contract Distributor is
     address receiver,
     uint value,
     bytes4 currency
+  );
+
+  event ClaimSubmitted (
+    uint256 indexed coverId,
+    uint256 indexed claimId
+  );
+
+  event CoverBought (
+    uint indexed coverId,
+    address indexed buyer,
+    address indexed contractAddress,
+    bytes4 asset,
+    uint256 coverAmount,
+    uint256 coverPrice,
+    uint256 startTime,
+    uint16 coverPeriod
   );
 
   bytes4 internal constant ethCurrency = "ETH";
@@ -207,6 +225,6 @@ contract Distributor is
     _;
   }
 
-  function () payable external {
+  fallback () payable external {
   }
 }
