@@ -1,3 +1,18 @@
+/* Copyright (C) 2017 NexusMutual.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -6,6 +21,8 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./interfaces/INXMaster.sol";
+import "./interfaces/ICover.sol";
 
 
 contract Distributor is
@@ -15,9 +32,11 @@ contract Distributor is
   using SafeMath for uint;
   using SafeERC20 for IERC20;
 
+  address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
   struct Token {
     uint expirationTimestamp;
-    bytes4 coverCurrency;
+    address coverAsset;
     uint coverAmount;
     uint coverPrice;
     uint coverPriceNXM;
@@ -31,7 +50,7 @@ contract Distributor is
   event ClaimRedeemed (
     address receiver,
     uint value,
-    bytes4 currency
+    address coverAsset
   );
 
   event ClaimSubmitted (
@@ -55,12 +74,12 @@ contract Distributor is
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
   mapping(uint256 => Token) public tokens;
-
-  mapping(bytes4 => uint) public withdrawableTokens;
+  mapping(address => uint) public withdrawableTokens;
+  INXMaster master;
 
   constructor(address _masterAddress, uint _distributorFeePercentage) public {
     distributorFeePercentage = _distributorFeePercentage;
-    // TODO: set master address
+    master = INXMaster(_masterAddress);
   }
 
   // Arguments to be passed as coverDetails, from the quote api:
@@ -69,31 +88,43 @@ contract Distributor is
   //    coverDetails[2] = coverPriceNXM;
   //    coverDetails[3] = expireTime;
   //    coverDetails[4] = generationTime;
-  function buyCover(
-        address coveredContractAddress,
-        bytes4 coverCurrency,
-        uint[] calldata coverDetails,
-        uint16 coverPeriod,
-        uint8 _v,
-        bytes32 _r,
-        bytes32 _s
+  function buyCover (
+    address contractAddress,
+    address coverAsset,
+    uint coverAmount,
+    uint16 coverPeriod,
+    uint coverPrice,
+    uint coverType,
+    bytes calldata data
   )
      external
      payable
   {
 
-    uint coverPrice = coverDetails[1];
+    address coverContractAddress = master.getLatestAddress("CO");
+    ICover cover = ICover(coverContractAddress);
     uint requiredValue = distributorFeePercentage.mul(coverPrice).div(100).add(coverPrice);
-    if (coverCurrency == "ETH") {
+    if (coverAsset == ETH) {
       require(msg.value == requiredValue, "Incorrect value sent");
+      // solhint-disable-next-line avoid-low-level-calls
+      (bool ok, /* data */) = address(cover).call{value: coverPrice}("");
+      require(ok, "Cover: Transfer to Pool failed");
     } else {
-      // TODO: erc20 handle
+      IERC20 token = IERC20(coverAsset);
+      token.safeTransferFrom(msg.sender, address(this), requiredValue);
+      token.safeApprove(coverContractAddress, coverPrice);
     }
 
+    uint coverId = cover.buyCover(
+      contractAddress,
+      coverAsset,
+      coverAmount,
+      coverPeriod,
+      coverType,
+      data
+    );
 
-    // TODO: fix
-    uint coverId = 0;
-    withdrawableTokens[coverCurrency] = withdrawableTokens[coverCurrency].add(requiredValue.sub(coverPrice));
+    withdrawableTokens[coverAsset] = withdrawableTokens[coverAsset].add(requiredValue.sub(coverPrice));
 
     // mint token
     uint256 nextTokenId = issuedTokensCount++;
@@ -101,12 +132,12 @@ contract Distributor is
     // TODO: fix
     uint expirationTimestamp = 0;
     tokens[nextTokenId] = Token(expirationTimestamp,
-      coverCurrency,
-      coverDetails[0],
-      coverDetails[1],
-      coverDetails[2],
-      coverDetails[3],
-      coverDetails[4],
+      coverAsset,
+      0,
+      1,
+      2,
+      3,
+      4,
       coverId, false, 0);
     _mint(msg.sender, nextTokenId);
   }
@@ -156,8 +187,8 @@ contract Distributor is
     require(payoutIsCompleted, "Claim accepted but payout not completed");
 
     _burn(tokenId);
-    _sendAssuredSum(tokens[tokenId].coverCurrency, sumAssured);
-    emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverCurrency);
+    _sendAssuredSum("ETH", sumAssured);
+    emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverAsset);
   }
 
   function _sendAssuredSum(
@@ -193,18 +224,20 @@ contract Distributor is
     onlyOwner
     nonReentrant
   {
-    require(withdrawableTokens[ethCurrency] >= _amount, "Not enough ETH");
-    withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].sub(_amount);
+    ICover cover = ICover(master.getLatestAddress("CO"));
+
+    require(withdrawableTokens[ETH] >= _amount, "Not enough ETH");
+    withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(_amount);
     _recipient.transfer(_amount);
   }
 
-  function withdrawTokens(address payable _recipient, uint256 _amount, bytes4 _currency)
+  function withdrawTokens(address payable _recipient, uint256 _amount, address asset)
     external
     onlyOwner
     nonReentrant
   {
-    require(withdrawableTokens[_currency] >= _amount, "Not enough tokens");
-    withdrawableTokens[_currency] = withdrawableTokens[_currency].sub(_amount);
+    require(withdrawableTokens[asset] >= _amount, "Not enough tokens");
+    withdrawableTokens[asset] = withdrawableTokens[asset].sub(_amount);
 
     // TODO: fix
     IERC20 erc20;
@@ -217,7 +250,6 @@ contract Distributor is
   {
     // TODO: see if it can be sold through proxy
     uint ethValue;
-    withdrawableTokens[ethCurrency] = withdrawableTokens[ethCurrency].add(ethValue);
   }
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {

@@ -15,18 +15,13 @@
 
 pragma solidity ^0.7.4;
 
-interface ICover {
+interface INXMaster {
 
-    function buyCover (
-        address contractAddress,
-        address coverAsset,
-        uint coverAmount,
-        uint16 coverPeriod,
-        uint coverType,
-        bytes calldata data
-    ) external payable returns (uint);
+    function masterInitialized() external view returns(bool);
 
-    function submitClaim(uint coverId, bytes calldata data) external returns (uint);
+    function isPause() external view returns(bool check);
 
-    function payoutIsCompleted(uint claimId) external view returns (bool);
+    function isMember(address _add) external view returns(bool);
+
+    function getLatestAddress(bytes2 _contractName) external view returns(address payable contractAddress);
 }
