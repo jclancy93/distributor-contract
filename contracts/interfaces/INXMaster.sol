@@ -24,4 +24,6 @@ interface INXMaster {
     function isMember(address _add) external view returns(bool);
 
     function getLatestAddress(bytes2 _contractName) external view returns(address payable contractAddress);
+
+    function tokenAddress() external view returns (address);
 }

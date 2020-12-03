@@ -22,11 +22,24 @@ interface ICover {
         address coverAsset,
         uint coverAmount,
         uint16 coverPeriod,
-        uint coverType,
+        uint8 coverType,
         bytes calldata data
     ) external payable returns (uint);
 
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
     function payoutIsCompleted(uint claimId) external view returns (bool);
+
+    function getCover(uint coverId)
+    external
+    view
+    returns (
+        uint8 status,
+        uint sumAssured,
+        uint16 coverPeriod,
+        uint validUntil,
+        address contractAddress,
+        address coverAsset,
+        uint premiumNXM
+    );
 }

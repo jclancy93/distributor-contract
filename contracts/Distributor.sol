@@ -34,19 +34,6 @@ contract Distributor is
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-  struct Token {
-    uint expirationTimestamp;
-    address coverAsset;
-    uint coverAmount;
-    uint coverPrice;
-    uint coverPriceNXM;
-    uint expireTime;
-    uint generationTime;
-    uint coverId;
-    bool claimInProgress;
-    uint claimId;
-  }
-
   event ClaimRedeemed (
     address receiver,
     uint value,
@@ -69,11 +56,18 @@ contract Distributor is
     uint16 coverPeriod
   );
 
-  bytes4 internal constant ethCurrency = "ETH";
+  bytes4 public constant ethCurrency = "ETH";
 
+  struct Token {
+    uint claimId;
+    uint price;
+  }
+
+  // cover Id => claim Id
+  mapping (uint => Token) public tokens;
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
-  mapping(uint256 => Token) public tokens;
+
   mapping(address => uint) public withdrawableTokens;
   INXMaster master;
 
@@ -82,19 +76,13 @@ contract Distributor is
     master = INXMaster(_masterAddress);
   }
 
-  // Arguments to be passed as coverDetails, from the quote api:
-  //    coverDetails[0] = coverAmount;
-  //    coverDetails[1] = coverPrice;
-  //    coverDetails[2] = coverPriceNXM;
-  //    coverDetails[3] = expireTime;
-  //    coverDetails[4] = generationTime;
   function buyCover (
     address contractAddress,
     address coverAsset,
     uint coverAmount,
     uint16 coverPeriod,
     uint coverPrice,
-    uint coverType,
+    uint8 coverType,
     bytes calldata data
   )
      external
@@ -126,45 +114,23 @@ contract Distributor is
 
     withdrawableTokens[coverAsset] = withdrawableTokens[coverAsset].add(requiredValue.sub(coverPrice));
 
-    // mint token
-    uint256 nextTokenId = issuedTokensCount++;
-
-    // TODO: fix
-    uint expirationTimestamp = 0;
-    tokens[nextTokenId] = Token(expirationTimestamp,
-      coverAsset,
-      0,
-      1,
-      2,
-      3,
-      4,
-      coverId, false, 0);
-    _mint(msg.sender, nextTokenId);
+    // mint token using the coverId as a tokenId (guaranteed unique)
+    _mint(msg.sender, coverId);
+    tokens[coverId].price = coverPrice;
   }
 
   function submitClaim(
-    uint256 tokenId
+    uint256 tokenId,
+    bytes calldata data
   )
     external
     onlyTokenApprovedOrOwner(tokenId)
   {
-
-    if (tokens[tokenId].claimInProgress) {
-      uint8 coverStatus;
-
-      // TODO: fix
-      coverStatus = 0;
-      // TODO: fix for denied of accepted
-      require(coverStatus == 1,
-        "Can submit another claim only if the previous one was denied.");
-    }
-    require(tokens[tokenId].expirationTimestamp > block.timestamp, "Token is expired");
-
-    // TODO: fix
-    uint claimId = 0;
-
-    tokens[tokenId].claimInProgress = true;
+    ICover cover = ICover(master.getLatestAddress("CO"));
+    // coverId = tokenId
+    uint claimId = cover.submitClaim(tokenId, data);
     tokens[tokenId].claimId = claimId;
+    emit ClaimSubmitted(tokenId, claimId);
   }
 
   function redeemClaim(
@@ -174,48 +140,35 @@ contract Distributor is
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    require(tokens[tokenId].claimInProgress, "No claim is in progress");
-    uint8 coverStatus;
-    uint sumAssured;
-    // TODO: fix fetching of status and sumAssured
-
-    // TODO: check for status accepted
-    require(coverStatus == 1, "Claim is not accepted");
-
-    // TODO: fix
-    bool payoutIsCompleted = false;
-    require(payoutIsCompleted, "Claim accepted but payout not completed");
+    ICover cover = ICover(master.getLatestAddress("CO"));
+    require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Claim accepted but payout not completed");
+    (/* status */, uint sumAssured, /* coverPeriod */, /* validUntil */, /* contractAddress */, address coverAsset, /* premiumNXM */) = cover.getCover(tokenId);
 
     _burn(tokenId);
-    _sendAssuredSum("ETH", sumAssured);
-    emit ClaimRedeemed(msg.sender, sumAssured, tokens[tokenId].coverAsset);
+    _sendAssuredSum(coverAsset, sumAssured);
+    emit ClaimRedeemed(msg.sender, sumAssured, coverAsset);
   }
 
   function _sendAssuredSum(
-    bytes4 coverCurrency,
+    address coverAsset,
     uint sumAssured
     )
     internal
   {
-    if (coverCurrency == ethCurrency) {
-      msg.sender.transfer(sumAssured);
+    if (coverAsset == ETH) {
+      (bool ok, /* data */) = msg.sender.call{value: sumAssured}("");
+      require(ok, "Cover: Transfer to Pool failed");
     } else {
-      // TODO: fix
-      IERC20 erc20;
-      require(erc20.transfer(msg.sender, sumAssured), "Transfer failed");
+      IERC20 erc20 = IERC20(coverAsset);
+      erc20.safeTransfer(msg.sender, sumAssured);
     }
   }
 
-  function getCoverStatus(uint256 tokenId) external view returns (uint8 coverStatus, bool payoutCompleted) {
-    // TODO: fix
-  }
-
-  function nxmTokenApprove(address _spender, uint256 _value)
+  function approveNXM(address _spender, uint256 _value)
   public
   onlyOwner
   {
-    // TODO: see if it can be done through proxy
-    IERC20 nxmToken;
+    IERC20 nxmToken = IERC20(master.tokenAddress());
     nxmToken.approve(_spender, _value);
   }
 
@@ -239,17 +192,8 @@ contract Distributor is
     require(withdrawableTokens[asset] >= _amount, "Not enough tokens");
     withdrawableTokens[asset] = withdrawableTokens[asset].sub(_amount);
 
-    // TODO: fix
-    IERC20 erc20;
+    IERC20 erc20 = IERC20(asset);
     require(erc20.transfer(_recipient, _amount), "Transfer failed");
-  }
-
-  function sellNXMTokens(uint amount)
-    external
-    onlyOwner
-  {
-    // TODO: see if it can be sold through proxy
-    uint ethValue;
   }
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
