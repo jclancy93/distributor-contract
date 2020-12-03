@@ -35,25 +35,23 @@ contract Distributor is
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   event ClaimRedeemed (
+    uint indexed coverId,
+    uint indexed claimId,
     address receiver,
     uint value,
     address coverAsset
   );
 
   event ClaimSubmitted (
-    uint256 indexed coverId,
-    uint256 indexed claimId
+    uint indexed coverId,
+    uint indexed claimId,
+    address indexed submitter
   );
 
   event CoverBought (
     uint indexed coverId,
     address indexed buyer,
-    address indexed contractAddress,
-    bytes4 asset,
-    uint256 coverAmount,
-    uint256 coverPrice,
-    uint256 startTime,
-    uint16 coverPeriod
+    address indexed contractAddress
   );
 
   bytes4 public constant ethCurrency = "ETH";
@@ -117,6 +115,8 @@ contract Distributor is
     // mint token using the coverId as a tokenId (guaranteed unique)
     _mint(msg.sender, coverId);
     tokens[coverId].price = coverPrice;
+
+    emit CoverBought(coverId, msg.sender, contractAddress);
   }
 
   function submitClaim(
@@ -130,7 +130,7 @@ contract Distributor is
     // coverId = tokenId
     uint claimId = cover.submitClaim(tokenId, data);
     tokens[tokenId].claimId = claimId;
-    emit ClaimSubmitted(tokenId, claimId);
+    emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
 
   function redeemClaim(
@@ -146,7 +146,7 @@ contract Distributor is
 
     _burn(tokenId);
     _sendAssuredSum(coverAsset, sumAssured);
-    emit ClaimRedeemed(msg.sender, sumAssured, coverAsset);
+    emit ClaimRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, sumAssured, coverAsset);
   }
 
   function _sendAssuredSum(
