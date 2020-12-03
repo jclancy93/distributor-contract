@@ -61,14 +61,14 @@ contract Distributor is
   }
 
   mapping (uint => Token) public tokens;
-  uint public distributorFeePercentage;
+  uint public feePercentage;
   uint256 internal issuedTokensCount;
 
   mapping(address => uint) public withdrawableTokens;
   INXMaster master;
 
-  constructor(address _masterAddress, uint _distributorFeePercentage) public {
-    distributorFeePercentage = _distributorFeePercentage;
+  constructor(address _masterAddress, uint _feePercentage) public {
+    feePercentage = _feePercentage;
     master = INXMaster(_masterAddress);
   }
 
@@ -87,7 +87,7 @@ contract Distributor is
 
     address coverContractAddress = master.getLatestAddress("CO");
     ICover cover = ICover(coverContractAddress);
-    uint requiredValue = distributorFeePercentage.mul(coverPrice).div(100).add(coverPrice);
+    uint requiredValue = feePercentage.mul(coverPrice).div(100).add(coverPrice);
     if (coverAsset == ETH) {
       require(msg.value == requiredValue, "Distributor: Incorrect ETH value sent");
       // solhint-disable-next-line avoid-low-level-calls
@@ -178,8 +178,6 @@ contract Distributor is
     onlyOwner
     nonReentrant
   {
-    ICover cover = ICover(master.getLatestAddress("CO"));
-
     require(withdrawableTokens[ETH] >= _amount, "Distributor: Not enough ETH");
     withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(_amount);
     _recipient.transfer(_amount);
@@ -195,6 +193,10 @@ contract Distributor is
 
     IERC20 erc20 = IERC20(asset);
     require(erc20.transfer(_recipient, _amount), "Distributor: Transfer failed");
+  }
+
+  function setFeePercentage(uint _feePercentage) public onlyOwner {
+    feePercentage = _feePercentage;
   }
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
