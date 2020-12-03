@@ -33,6 +33,7 @@ contract Distributor is
   using SafeERC20 for IERC20;
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  bytes4 public constant ethCurrency = "ETH";
 
   event ClaimRedeemed (
     uint indexed coverId,
@@ -54,14 +55,11 @@ contract Distributor is
     address indexed contractAddress
   );
 
-  bytes4 public constant ethCurrency = "ETH";
-
   struct Token {
     uint claimId;
     uint price;
   }
 
-  // cover Id => claim Id
   mapping (uint => Token) public tokens;
   uint public distributorFeePercentage;
   uint256 internal issuedTokensCount;
@@ -91,10 +89,10 @@ contract Distributor is
     ICover cover = ICover(coverContractAddress);
     uint requiredValue = distributorFeePercentage.mul(coverPrice).div(100).add(coverPrice);
     if (coverAsset == ETH) {
-      require(msg.value == requiredValue, "Incorrect value sent");
+      require(msg.value == requiredValue, "Distributor: Incorrect ETH value sent");
       // solhint-disable-next-line avoid-low-level-calls
       (bool ok, /* data */) = address(cover).call{value: coverPrice}("");
-      require(ok, "Cover: Transfer to Pool failed");
+      require(ok, "Distributor: Token Transfer to NexusMutual failed");
     } else {
       IERC20 token = IERC20(coverAsset);
       token.safeTransferFrom(msg.sender, address(this), requiredValue);
@@ -141,7 +139,7 @@ contract Distributor is
     nonReentrant
   {
     ICover cover = ICover(master.getLatestAddress("CO"));
-    require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Claim accepted but payout not completed");
+    require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Distributor: Claim accepted but payout not completed");
     (/* status */, uint sumAssured, /* coverPeriod */, /* validUntil */, /* contractAddress */, address coverAsset, /* premiumNXM */) = cover.getCover(tokenId);
 
     _burn(tokenId);
@@ -157,7 +155,7 @@ contract Distributor is
   {
     if (coverAsset == ETH) {
       (bool ok, /* data */) = msg.sender.call{value: sumAssured}("");
-      require(ok, "Cover: Transfer to Pool failed");
+      require(ok, "Distributor: Transfer to Pool failed");
     } else {
       IERC20 erc20 = IERC20(coverAsset);
       erc20.safeTransfer(msg.sender, sumAssured);
@@ -179,7 +177,7 @@ contract Distributor is
   {
     ICover cover = ICover(master.getLatestAddress("CO"));
 
-    require(withdrawableTokens[ETH] >= _amount, "Not enough ETH");
+    require(withdrawableTokens[ETH] >= _amount, "Distributor: Not enough ETH");
     withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(_amount);
     _recipient.transfer(_amount);
   }
@@ -189,15 +187,15 @@ contract Distributor is
     onlyOwner
     nonReentrant
   {
-    require(withdrawableTokens[asset] >= _amount, "Not enough tokens");
+    require(withdrawableTokens[asset] >= _amount, "Distributor: Not enough tokens");
     withdrawableTokens[asset] = withdrawableTokens[asset].sub(_amount);
 
     IERC20 erc20 = IERC20(asset);
-    require(erc20.transfer(_recipient, _amount), "Transfer failed");
+    require(erc20.transfer(_recipient, _amount), "Distributor: Transfer failed");
   }
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
-    require(_isApprovedOrOwner(msg.sender, tokenId), "Not approved or owner");
+    require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
     _;
   }
 
