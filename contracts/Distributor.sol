@@ -39,7 +39,7 @@ contract Distributor is
     uint indexed coverId,
     uint indexed claimId,
     address receiver,
-    uint value,
+    uint payout,
     address coverAsset
   );
 
@@ -140,11 +140,14 @@ contract Distributor is
   {
     ICover cover = ICover(master.getLatestAddress("CO"));
     require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Distributor: Claim accepted but payout not completed");
-    (/* status */, uint sumAssured, /* coverPeriod */, /* validUntil */, /* contractAddress */, address coverAsset, /* premiumNXM */) = cover.getCover(tokenId);
+    (
+      /* status */, /* sumAssured */, /* coverPeriod */, /* validUntil */, /* contractAddress */,
+      address coverAsset, /* premiumNXM */, uint payout
+    ) = cover.getCover(tokenId);
 
     _burn(tokenId);
-    _sendAssuredSum(coverAsset, sumAssured);
-    emit ClaimRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, sumAssured, coverAsset);
+    _sendAssuredSum(coverAsset, payout);
+    emit ClaimRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, payout, coverAsset);
   }
 
   function _sendAssuredSum(

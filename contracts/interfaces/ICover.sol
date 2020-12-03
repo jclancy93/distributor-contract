@@ -40,6 +40,7 @@ interface ICover {
         uint validUntil,
         address contractAddress,
         address coverAsset,
-        uint premiumNXM
+        uint premiumNXM,
+        uint payout
     );
 }
