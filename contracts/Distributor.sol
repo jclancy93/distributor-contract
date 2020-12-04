@@ -61,7 +61,7 @@ contract Distributor is
   }
 
   mapping (uint => Token) public tokens;
-  uint public feePercentage;
+  uint public feePercentage; // with 2 decimals. eg.: 10.00% stored as 1000
   uint256 internal issuedTokensCount;
 
   mapping(address => uint) public withdrawableTokens;
@@ -87,7 +87,7 @@ contract Distributor is
 
     address coverContractAddress = master.getLatestAddress("CO");
     ICover cover = ICover(coverContractAddress);
-    uint requiredValue = feePercentage.mul(coverPrice).div(100).add(coverPrice);
+    uint requiredValue = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     if (coverAsset == ETH) {
       require(msg.value == requiredValue, "Distributor: Incorrect ETH value sent");
       // solhint-disable-next-line avoid-low-level-calls
