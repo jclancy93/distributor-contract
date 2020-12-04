@@ -159,10 +159,10 @@ contract Distributor is
     if (coverAsset == ETH) {
       (bool ok, /* data */) = msg.sender.call{value: sumAssured}("");
       require(ok, "Distributor: Transfer to Pool failed");
-    } else {
-      IERC20 erc20 = IERC20(coverAsset);
-      erc20.safeTransfer(msg.sender, sumAssured);
+      return;
     }
+    IERC20 erc20 = IERC20(coverAsset);
+    erc20.safeTransfer(msg.sender, sumAssured);
   }
 
   function approveNXM(address _spender, uint256 _value)
