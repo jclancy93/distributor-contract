@@ -21,7 +21,6 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/INXMaster.sol";
 import "./interfaces/ICover.sol";
 
 
@@ -65,11 +64,13 @@ contract Distributor is
   uint256 internal issuedTokensCount;
 
   mapping(address => uint) public withdrawableTokens;
-  INXMaster master;
+  ICover cover;
+  IERC20 nxmToken;
 
-  constructor(address _masterAddress, uint _feePercentage) public {
+  constructor(address coverAddress, address nxmTokenAddress, uint _feePercentage) public {
     feePercentage = _feePercentage;
-    master = INXMaster(_masterAddress);
+    cover = ICover(coverAddress);
+    nxmToken = IERC20(nxmTokenAddress);
   }
 
   function buyCover (
@@ -85,18 +86,16 @@ contract Distributor is
      payable
   {
 
-    address coverContractAddress = master.getLatestAddress("CO");
-    ICover cover = ICover(coverContractAddress);
-    uint requiredValue = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
+    uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     if (coverAsset == ETH) {
-      require(msg.value == requiredValue, "Distributor: Incorrect ETH value sent");
+      require(msg.value == coverPriceWithFee, "Distributor: Incorrect ETH value sent");
       // solhint-disable-next-line avoid-low-level-calls
       (bool ok, /* data */) = address(cover).call{value: coverPrice}("");
       require(ok, "Distributor: Token Transfer to NexusMutual failed");
     } else {
       IERC20 token = IERC20(coverAsset);
-      token.safeTransferFrom(msg.sender, address(this), requiredValue);
-      token.safeApprove(coverContractAddress, coverPrice);
+      token.safeTransferFrom(msg.sender, address(this), coverPriceWithFee);
+      token.safeApprove(address(cover), coverPrice);
     }
 
     uint coverId = cover.buyCover(
@@ -108,7 +107,7 @@ contract Distributor is
       data
     );
 
-    withdrawableTokens[coverAsset] = withdrawableTokens[coverAsset].add(requiredValue.sub(coverPrice));
+    withdrawableTokens[coverAsset] = withdrawableTokens[coverAsset].add(coverPriceWithFee.sub(coverPrice));
 
     // mint token using the coverId as a tokenId (guaranteed unique)
     _mint(msg.sender, coverId);
@@ -124,7 +123,6 @@ contract Distributor is
     external
     onlyTokenApprovedOrOwner(tokenId)
   {
-    ICover cover = ICover(master.getLatestAddress("CO"));
     // coverId = tokenId
     uint claimId = cover.submitClaim(tokenId, data);
     tokens[tokenId].claimId = claimId;
@@ -138,7 +136,6 @@ contract Distributor is
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    ICover cover = ICover(master.getLatestAddress("CO"));
     require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Distributor: Claim accepted but payout not completed");
     (
       /* status */, /* sumAssured */, /* coverPeriod */, /* validUntil */, /* contractAddress */,
@@ -169,7 +166,6 @@ contract Distributor is
   public
   onlyOwner
   {
-    IERC20 nxmToken = IERC20(master.tokenAddress());
     nxmToken.approve(_spender, _value);
   }
 
