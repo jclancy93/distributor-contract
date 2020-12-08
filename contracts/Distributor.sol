@@ -32,7 +32,6 @@ contract Distributor is
   using SafeERC20 for IERC20;
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-  bytes4 public constant ethCurrency = "ETH";
 
   event ClaimRedeemed (
     uint indexed coverId,
