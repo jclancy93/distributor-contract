@@ -1,20 +1,25 @@
 pragma solidity ^0.7.4;
 
 import "./Distributor.sol";
+import "./interfaces/INXMaster.sol";
+import "./interfaces/IMemberRoles.sol";
 
 contract DistributorFactory {
 
     address coverAddress;
-    address nxmTokenAddress;
 
-    constructor (address _coverAddress, address _nxmTokenAddress) {
-        coverAddress = _coverAddress;
-        nxmTokenAddress = _nxmTokenAddress;
+    INXMaster master;
+
+    constructor (address masterAddress) {
+        master = INXMaster(masterAddress);
     }
 
-    function newDistributor(uint _feePercentage) public returns (address newContract) {
-        Distributor d = new Distributor(coverAddress, nxmTokenAddress, _feePercentage);
+    function newDistributor(uint _feePercentage) public payable returns (address newContract) {
+
+        IMemberRoles memberRoles = IMemberRoles(master.getLatestAddress("MR"));
+        Distributor d = new Distributor(master.getLatestAddress("CO"), master.tokenAddress(), _feePercentage);
         d.transferOwnership(msg.sender);
+        memberRoles.payJoiningFee{ value: msg.value}(address(d));
         return address(d);
     }
 }
