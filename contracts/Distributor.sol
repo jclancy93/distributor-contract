@@ -13,14 +13,14 @@
   You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
-pragma solidity 0.7.4;
+pragma solidity ^0.7.14;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-v3/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts-v3/access/Ownable.sol";
+import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
 
 

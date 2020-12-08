@@ -30,6 +30,16 @@ const forkConfig = forkURL ? { forking: { url: forkURL } } : {};
 
 module.exports = {
 
+  // paths: {
+  //   sources: ["./contracts", "./nexusmutual-contracts/contracts"],
+  // },
+
+  // dependencyCompiler: {
+  //   paths: [
+  //     './nexusmutual-contracts/contracts/modules/capital/Pool.sol',
+  //   ],
+  // },
+
   mocha: {
     exit: true,
     bail: true,
@@ -50,7 +60,10 @@ module.exports = {
 
   solidity: {
     compilers: [
-      { version: '0.7.4' } // distributor
+      { version: '0.7.14' }, // distributor
+      { version: '0.5.17' }, // nexus mutual
+      { version: '0.5.16' }, // uniswap v2 core
+      { version: '0.6.6' }, // uniswap v2 peripherals,
     ],
   },
 };

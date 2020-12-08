@@ -13,7 +13,7 @@ const [, member1, member2, member3, coverHolder, nonMember1] = accounts;
 describe('Token price functions', function () {
 
   beforeEach(async function () {
-    await enrollMember(this.contracts, [member1, member2, member3, coverHolder]);
+    //await enrollMember(this.contracts, [member1, member2, member3, coverHolder]);
   });
 
   it('buyNXM reverts for non-member', async function () {
