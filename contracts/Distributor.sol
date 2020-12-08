@@ -13,7 +13,7 @@
   You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
-pragma solidity ^0.7.14;
+pragma solidity ^0.7.4;
 
 import "@openzeppelin/contracts-v3/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
