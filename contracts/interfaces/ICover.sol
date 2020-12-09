@@ -26,6 +26,15 @@ interface ICover {
         bytes calldata data
     ) external payable returns (uint);
 
+    function getCoverPrice (
+        address contractAddress,
+        address coverAsset,
+        uint coverAmount,
+        uint16 coverPeriod,
+        uint8 coverType,
+        bytes calldata data
+    ) external view returns (uint coverPrice);
+
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
     function payoutIsCompleted(uint claimId) external view returns (bool);

@@ -13,6 +13,7 @@
 pragma solidity >0.5.0;
 
 import "../../nexusmutual-contracts/contracts/modules/capital/Pool.sol";
+import "../../nexusmutual-contracts/contracts/modules/cover/Cover.sol";
 import "../../nexusmutual-contracts/contracts/modules/governance/external/OwnedUpgradeabilityProxy.sol";
 import "../../nexusmutual-contracts/contracts/modules/claims/ClaimProofs.sol";
 

@@ -10,16 +10,24 @@ contract DistributorFactory {
 
     INXMaster master;
 
+    event DistributorCreated(
+        address contractAddress,
+        address owner,
+        uint feePercentage
+    );
+
     constructor (address masterAddress) {
         master = INXMaster(masterAddress);
     }
 
-    function newDistributor(uint _feePercentage) public payable returns (address newContract) {
+    function newDistributor(uint _feePercentage) public payable returns (address) {
 
         IMemberRoles memberRoles = IMemberRoles(master.getLatestAddress("MR"));
         Distributor d = new Distributor(master.getLatestAddress("CO"), master.tokenAddress(), _feePercentage);
         d.transferOwnership(msg.sender);
         memberRoles.payJoiningFee{ value: msg.value}(address(d));
+
+        emit DistributorCreated(address(d), msg.sender, _feePercentage);
         return address(d);
     }
 }

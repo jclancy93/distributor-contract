@@ -77,7 +77,6 @@ contract Distributor is
     address coverAsset,
     uint coverAmount,
     uint16 coverPeriod,
-    uint coverPrice,
     uint8 coverType,
     bytes calldata data
   )
@@ -85,12 +84,17 @@ contract Distributor is
      payable
   {
 
+    uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, coverAmount, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     if (coverAsset == ETH) {
-      require(msg.value == coverPriceWithFee, "Distributor: Incorrect ETH value sent");
+      require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");
       // solhint-disable-next-line avoid-low-level-calls
       (bool ok, /* data */) = address(cover).call{value: coverPrice}("");
-      require(ok, "Distributor: Token Transfer to NexusMutual failed");
+      require(ok, "Distributor: ETH Transfer to NexusMutual failed");
+
+      uint remainder = msg.value - coverPriceWithFee;
+      (ok, /* data */) = address(msg.sender).call{value: remainder}("");
+      require(ok, "Distributor: Returning ETH remainder to sender failed.");
     } else {
       IERC20 token = IERC20(coverAsset);
       token.safeTransferFrom(msg.sender, address(this), coverPriceWithFee);
