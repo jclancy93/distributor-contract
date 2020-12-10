@@ -23,9 +23,9 @@ async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
 
   const basePrice = new BN(cover.price);
   // encoded data and signature uses unit price.
-  const unitPrice = basePrice.div(ether('1'));
+  const unitAmount = toBN(cover.amount).div(ether('1')).toString();
   const [v, r, s] = await getSignedQuote(
-    coverToCoverDetailsArray({...cover, price: unitPrice }),
+    coverToCoverDetailsArray({...cover, amount: unitAmount }),
     cover.currency,
     cover.period,
     cover.contractAddress,
@@ -33,7 +33,7 @@ async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
   );
   const data = web3.eth.abi.encodeParameters(
     ['uint', 'uint', 'uint', 'uint', 'uint8', 'bytes32', 'bytes32'],
-    [unitPrice, cover.priceNXM, cover.expireTime, cover.generationTime, v, r, s]
+    [basePrice, cover.priceNXM, cover.expireTime, cover.generationTime, v, r, s]
   );
   const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
 

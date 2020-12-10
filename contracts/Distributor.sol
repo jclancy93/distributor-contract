@@ -88,12 +88,9 @@ contract Distributor is
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     if (coverAsset == ETH) {
       require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");
-      // solhint-disable-next-line avoid-low-level-calls
-      (bool ok, /* data */) = address(cover).call{value: coverPrice}("");
-      require(ok, "Distributor: ETH Transfer to NexusMutual failed");
-
       uint remainder = msg.value - coverPriceWithFee;
-      (ok, /* data */) = address(msg.sender).call{value: remainder}("");
+      // solhint-disable-next-line avoid-low-level-calls
+      (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
       require(ok, "Distributor: Returning ETH remainder to sender failed.");
     } else {
       IERC20 token = IERC20(coverAsset);
@@ -101,7 +98,7 @@ contract Distributor is
       token.safeApprove(address(cover), coverPrice);
     }
 
-    uint coverId = cover.buyCover(
+    uint coverId = cover.buyCover{value: coverPrice }(
       contractAddress,
       coverAsset,
       coverAmount,
