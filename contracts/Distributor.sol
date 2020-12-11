@@ -50,7 +50,8 @@ contract Distributor is
   event CoverBought (
     uint indexed coverId,
     address indexed buyer,
-    address indexed contractAddress
+    address indexed contractAddress,
+    uint feePercentage
   );
 
   struct Token {
@@ -113,7 +114,7 @@ contract Distributor is
     _mint(msg.sender, coverId);
     tokens[coverId].price = coverPrice;
 
-    emit CoverBought(coverId, msg.sender, contractAddress);
+    emit CoverBought(coverId, msg.sender, contractAddress, feePercentage);
   }
 
   function submitClaim(
