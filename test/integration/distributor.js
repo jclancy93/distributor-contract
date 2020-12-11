@@ -8,7 +8,7 @@ const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const BN = web3.utils.BN;
 
-const { enrollMember } = require('./external').enroll;
+const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
@@ -67,6 +67,20 @@ async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
   return tx;
 }
 
+async function voteOnClaim({ claimId, verdict, cl, cd, master, voter }) {
+  await cl.submitCAVote(claimId, verdict, { from: voter });
+
+  const minVotingTime = await cd.minVotingTime();
+  await time.increase(minVotingTime.addn(1));
+
+  const voteStatusBefore = await cl.checkVoteClosing(claimId);
+  assert.equal(voteStatusBefore.toString(), '1', 'should allow vote closing');
+
+  await master.closeClaim(claimId);
+  const voteStatusAfter = await cl.checkVoteClosing(claimId);
+  assert(voteStatusAfter.eqn(-1), 'voting should be closed');
+}
+
 
 describe('Distributor', function () {
 
@@ -74,6 +88,7 @@ describe('Distributor', function () {
     const { master, td, mr, tk, tc } = this.contracts;
     // console.log(this.contracts);
     await enrollMember(this.contracts, [member1, member2, member3, coverHolder]);
+    await enrollClaimAssessor(this.contracts, [member1, member2, member3]);
 
     const distributorFactory = await DistributorFactory.new(master.address);
 
@@ -111,13 +126,13 @@ describe('Distributor', function () {
     };
 
     const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt });
-
     const expectedCoverId = 1;
 
     expectEvent(buyCoverTx, 'CoverBought', {
       coverId: expectedCoverId.toString(),
       buyer: coverHolder,
       contractAddress: cover.contractAddress,
+      feePercentage: DEFAULT_FEE_PERCENTAGE.toString()
     });
 
     const createdCover = await coverContract.getCover(expectedCoverId);
@@ -155,11 +170,11 @@ describe('Distributor', function () {
     const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
 
     const expectedCoverId = 1;
-
     expectEvent(buyCoverTx, 'CoverBought', {
       coverId: expectedCoverId.toString(),
       buyer: coverHolder,
       contractAddress: cover.contractAddress,
+      feePercentage: DEFAULT_FEE_PERCENTAGE.toString()
     });
 
     const createdCover = await coverContract.getCover(expectedCoverId);
@@ -170,6 +185,144 @@ describe('Distributor', function () {
     assert.equal(createdCover.coverAsset, cover.asset);
     assert.equal(createdCover.premiumNXM.toString(), cover.priceNXM);
     assert.equal(createdCover.payout.toString(), cover.amount.toString());
+  });
+
+  it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+
+    const cover = {
+      amount: ether('10'),
+      price: '3362445813369838',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: ETH,
+      currency: hex('ETH'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    await buyCover({ cover, coverHolder, distributor, qt });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder
+    });
+
+    expectEvent(tx, 'ClaimSubmitted', {
+      coverId: expectedCoverId.toString(),
+      claimId: expectedClaimId.toString(),
+      submitter: coverHolder
+    });
+
+    await expectRevert(
+      distributor.submitClaim(expectedCoverId, emptyData, {
+        from: coverHolder
+      }),
+      'Cover: Claim already submitted'
+    );
+  });
+
+  it.only('allows claim reedeem for accepted ETH cover', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master } = this.contracts;
+
+    const cover = {
+      amount: ether('10'),
+      price: '3362445813369838',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: ETH,
+      currency: hex('ETH'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    await buyCover({ cover, coverHolder, distributor, qt });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+
+    const distributorEthBalanceBeforePayout = toBN(await web3.eth.getBalance(distributor.address));
+    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder
+    });
+
+    await voteOnClaim({...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
+
+    const payoutCompleted = await coverContract.payoutIsCompleted(expectedClaimId);
+    assert(payoutCompleted);
+
+    const distributorEthBalanceAfterPayout = toBN(await web3.eth.getBalance(distributor.address));
+
+    const payoutAmount = distributorEthBalanceAfterPayout.sub(distributorEthBalanceBeforePayout);
+    assert.equal(payoutAmount.toString(), cover.amount);
+
+    const coverHolderEthBalanceBefore = toBN(await web3.eth.getBalance(coverHolder));
+    await distributor.redeemClaim(expectedClaimId, {
+      from: coverHolder,
+      gasPrice: 0
+    });
+    const coverHolderEthBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
+    const redeemedAmount = coverHolderEthBalanceAfter.sub(coverHolderEthBalanceBefore);
+    assert.equal(redeemedAmount.toString(), cover.amount);
+  });
+
+  it.only('allows claim reedeem for accepted DAI cover', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+
+    const cover = {
+      amount: ether('10000'),
+      price: '3362445813369838',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: dai.address,
+      currency: hex('DAI'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    const buyerDAIFunds = ether('20000');
+    await dai.mint(coverHolder, buyerDAIFunds, {
+      from: coverHolder
+    });
+
+    await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+
+    const distributorEthBalanceBeforePayout = await dai.balanceOf(distributor.address);
+    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder
+    });
+
+    await voteOnClaim({...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
+
+    const payoutCompleted = await coverContract.payoutIsCompleted(expectedClaimId);
+    assert(payoutCompleted);
+
+    const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);
+
+    const payoutAmount = distributorDAIBalanceAfterPayout.sub(distributorEthBalanceBeforePayout);
+    assert.equal(payoutAmount.toString(), cover.amount);
+
+    const coverHolderDAIBalanceBefore =  await dai.balanceOf(coverHolder);
+    await distributor.redeemClaim(claimId, {
+      from: coverHolder,
+      gasPrice: 0
+    });
+    const coverHolderDAIBalanceAfter = await dai.balanceOf(coverHolder);
+    const redeemedAmount = coverHolderDAIBalanceAfter.sub(coverHolderDAIBalanceBefore);
+    assert.equal(redeemedAmount.toString(), cover.amount);
   });
 
   it('allows setting the fee percentage by owner', async function () {
