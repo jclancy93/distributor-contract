@@ -50,7 +50,7 @@ async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
         value: priceWithFee
       });
   } else {
-    await assetToken.approve(priceWithFee, distributor.address, {
+    await assetToken.approve(distributor.address, priceWithFee, {
       from: coverHolder
     });
     tx = await distributor.buyCover(
@@ -131,8 +131,8 @@ describe('Distributor', function () {
     // assert.equal(createdCover.validUntil.toString(), cover.expireTime);
   });
 
-  it.skip('sells DAI cover to coverHolder successfully', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+  it('sells DAI cover to coverHolder successfully', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
 
     const cover = {
       amount: ether('10000'),
@@ -140,14 +140,19 @@ describe('Distributor', function () {
       priceNXM: '744892736679184',
       expireTime: '7972408607',
       generationTime: '7972408607001',
-      asset: ETH,
+      asset: dai.address,
       currency: hex('DAI'),
       period: 120,
       type: 0,
       contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
     };
 
-    const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt });
+    const buyerDAIFunds = ether('20000');
+    await dai.mint(coverHolder, buyerDAIFunds, {
+      from: coverHolder
+    });
+
+    const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
 
     const expectedCoverId = 1;
 

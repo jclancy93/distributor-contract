@@ -87,19 +87,21 @@ contract Distributor is
 
     uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, coverAmount, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
+    uint buyCoverValue = 0;
     if (coverAsset == ETH) {
       require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");
       uint remainder = msg.value - coverPriceWithFee;
       // solhint-disable-next-line avoid-low-level-calls
       (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
       require(ok, "Distributor: Returning ETH remainder to sender failed.");
+      buyCoverValue = coverPrice;
     } else {
       IERC20 token = IERC20(coverAsset);
       token.safeTransferFrom(msg.sender, address(this), coverPriceWithFee);
       token.safeApprove(address(cover), coverPrice);
     }
 
-    uint coverId = cover.buyCover{value: coverPrice }(
+    uint coverId = cover.buyCover{value: buyCoverValue }(
       contractAddress,
       coverAsset,
       coverAmount,
