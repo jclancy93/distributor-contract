@@ -22,7 +22,7 @@ import "@openzeppelin/contracts-v3/access/Ownable.sol";
 import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
-
+import "hardhat/console.sol";
 
 contract Distributor is
   ERC721("NXMDistributorNFT", "NXMDNFT"),
@@ -172,26 +172,26 @@ contract Distributor is
     nxmToken.approve(_spender, _value);
   }
 
-  function withdrawEther(address payable _recipient, uint256 _amount)
+  function withdrawEther(address payable recipient, uint256 amount)
     external
     onlyOwner
     nonReentrant
   {
-    require(withdrawableTokens[ETH] >= _amount, "Distributor: Not enough ETH");
-    withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(_amount);
-    _recipient.transfer(_amount);
+    require(withdrawableTokens[ETH] >= amount, "Distributor: Not enough ETH");
+    withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(amount);
+    recipient.transfer(amount);
   }
 
-  function withdrawTokens(address payable _recipient, uint256 _amount, address asset)
+  function withdrawTokens(address payable recipient, uint256 amount, address asset)
     external
     onlyOwner
     nonReentrant
   {
-    require(withdrawableTokens[asset] >= _amount, "Distributor: Not enough tokens");
-    withdrawableTokens[asset] = withdrawableTokens[asset].sub(_amount);
+    require(withdrawableTokens[asset] >= amount, "Distributor: Not enough tokens");
+    withdrawableTokens[asset] = withdrawableTokens[asset].sub(amount);
 
     IERC20 erc20 = IERC20(asset);
-    require(erc20.transfer(_recipient, _amount), "Distributor: Transfer failed");
+    require(erc20.transfer(recipient, amount), "Distributor: Transfer failed");
   }
 
   function setFeePercentage(uint _feePercentage) public onlyOwner {

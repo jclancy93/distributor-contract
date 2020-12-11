@@ -13,7 +13,7 @@ const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner ] = accounts;
+const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank ] = accounts;
 
 const DEFAULT_FEE_PERCENTAGE = 500; // 5%
 
@@ -226,7 +226,7 @@ describe('Distributor', function () {
     );
   });
 
-  it.only('allows claim reedeem for accepted ETH cover', async function () {
+  it('allows claim reedeem for accepted ETH cover', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master } = this.contracts;
 
     const cover = {
@@ -273,11 +273,11 @@ describe('Distributor', function () {
     assert.equal(redeemedAmount.toString(), cover.amount);
   });
 
-  it.only('allows claim reedeem for accepted DAI cover', async function () {
+  it('allows claim reedeem for accepted DAI cover', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
 
     const cover = {
-      amount: ether('10000'),
+      amount: ether('1000'),
       price: '3362445813369838',
       priceNXM: '744892736679184',
       expireTime: '7972408607',
@@ -316,13 +316,89 @@ describe('Distributor', function () {
     assert.equal(payoutAmount.toString(), cover.amount);
 
     const coverHolderDAIBalanceBefore =  await dai.balanceOf(coverHolder);
-    await distributor.redeemClaim(claimId, {
+    await distributor.redeemClaim(expectedClaimId, {
       from: coverHolder,
       gasPrice: 0
     });
     const coverHolderDAIBalanceAfter = await dai.balanceOf(coverHolder);
     const redeemedAmount = coverHolderDAIBalanceAfter.sub(coverHolderDAIBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
+  });
+
+  it('allows distributor owner to withdraw ETH fees from bought covers', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+
+    let generationTime = 7972408607001;
+
+    const ethCoverTemplate = {
+      amount: ether('10'),
+      price: '3362445813369838',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: ETH,
+      currency: hex('ETH'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    const ethCoversCount = 2;
+    for (let i = 0; i < ethCoversCount; i++) {
+      const cover = { ...ethCoverTemplate, generationTime: generationTime++ };
+      await buyCover({ cover, coverHolder, distributor, qt });
+    }
+
+    const ethWithdrawAmount = toBN(ethCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(ethCoversCount);
+    const withdrawableEth = await distributor.withdrawableTokens(ETH);
+    assert.equal(withdrawableEth.toString(), ethWithdrawAmount.toString());
+
+    const ethBalanceBefore = toBN(await web3.eth.getBalance(bank));
+    await distributor.withdrawEther(bank, ethWithdrawAmount, {
+      from: distributorOwner
+    });
+    const ethBalanceAfter = toBN(await web3.eth.getBalance(bank));
+    assert.equal(ethBalanceAfter.sub(ethBalanceBefore).toString(), ethWithdrawAmount);
+  });
+
+  it('allows distributor owner to withdraw DAI fees from bought covers', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+
+    let generationTime = 7972408607001;
+
+    const daiCoverTemplate = {
+      amount: ether('1000'),
+      price: '53624458133698380',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: dai.address,
+      currency: hex('DAI'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    const buyerDAIFunds = ether('20000');
+    await dai.mint(coverHolder, buyerDAIFunds, {
+      from: coverHolder
+    });
+    const daiCoversCount = 2;
+    for (let i = 0; i < daiCoversCount; i++) {
+      const cover = { ...daiCoverTemplate, generationTime: generationTime++ };
+      await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
+    }
+
+    const daiWithdrawAmount = toBN(daiCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(daiCoversCount);
+    const withdrawableDAI = await distributor.withdrawableTokens(dai.address);
+    assert.equal(withdrawableDAI.toString(), daiWithdrawAmount.toString());
+
+    const daiBalanceBefore = await dai.balanceOf(bank);
+    await distributor.withdrawTokens(bank, daiWithdrawAmount, dai.address, {
+      from: distributorOwner
+    });
+    const daiBalanceAfter = await dai.balanceOf(bank);
+    assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
   });
 
   it('allows setting the fee percentage by owner', async function () {
