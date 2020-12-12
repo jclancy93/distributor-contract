@@ -401,6 +401,7 @@ describe('Distributor', function () {
     assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
   });
 
+
   it('allows setting the fee percentage by owner', async function () {
     const { distributor } = this.contracts;
 

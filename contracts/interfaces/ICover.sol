@@ -52,4 +52,6 @@ interface ICover {
         uint premiumNXM,
         uint payout
     );
+
+    function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory);
 }

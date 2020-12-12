@@ -150,6 +150,15 @@ contract Distributor is
     emit ClaimRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, payout, coverAsset);
   }
 
+  function executeCoverAction(uint tokenId, uint8 action, bytes calldata data)
+    external
+    payable
+    onlyTokenApprovedOrOwner(tokenId)
+    returns (bytes memory)
+  {
+    return cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
+  }
+
   function _sendAssuredSum(
     address coverAsset,
     uint sumAssured
