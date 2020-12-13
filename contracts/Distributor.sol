@@ -61,7 +61,7 @@ contract Distributor is
 
   mapping (uint => Token) public tokens;
   uint public feePercentage; // with 2 decimals. eg.: 10.00% stored as 1000
-  uint256 internal issuedTokensCount;
+  bool buysAllowed = true;
 
   mapping(address => uint) public withdrawableTokens;
   ICover cover;
@@ -84,6 +84,7 @@ contract Distributor is
      external
      payable
   {
+    require(buysAllowed, "Distributor: buys not allowed");
 
     uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, coverAmount, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
@@ -181,6 +182,10 @@ contract Distributor is
     nxmToken.approve(_spender, _value);
   }
 
+  function setBuysAllowed(bool _buysAllowed) external onlyOwner {
+    buysAllowed = _buysAllowed;
+  }
+
   function withdrawEther(address payable recipient, uint256 amount)
     external
     onlyOwner
@@ -203,7 +208,7 @@ contract Distributor is
     require(erc20.transfer(recipient, amount), "Distributor: Transfer failed");
   }
 
-  function setFeePercentage(uint _feePercentage) public onlyOwner {
+  function setFeePercentage(uint _feePercentage) external onlyOwner {
     feePercentage = _feePercentage;
   }
 

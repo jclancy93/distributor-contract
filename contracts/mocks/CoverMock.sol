@@ -10,7 +10,7 @@ contract CoverMock is ICover {
         uint fooValue;
     }
 
-    mapping (uint => Cover) covers;
+    mapping (uint => Cover) public covers;
 
     function buyCover (
         address contractAddress,
@@ -20,10 +20,9 @@ contract CoverMock is ICover {
         uint8 coverType,
         bytes calldata data
     ) external payable override returns (uint) {
-        revert("Unsupported");
-
         uint coverId = ++lastCoverId;
         covers[coverId].owner = msg.sender;
+        return coverId;
     }
 
     function getCoverPrice (
@@ -35,14 +34,8 @@ contract CoverMock is ICover {
         bytes calldata data
     ) external view override returns (uint coverPrice) {
         (
-        coverPrice,
-        /* coverPriceNXM */,
-        /* generatedAt */,
-        /* expiresAt */,
-        /* _v */,
-        /* _r */,
-        /* _s */
-        ) = abi.decode(data, (uint, uint, uint, uint, uint8, bytes32, bytes32));
+        coverPrice
+        ) = abi.decode(data, (uint));
     }
 
     function submitClaim(uint coverId, bytes calldata data) external override returns (uint) {

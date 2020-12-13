@@ -227,7 +227,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted ETH cover', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master } = this.contracts;
+    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
     const cover = {
       amount: ether('10'),
@@ -271,6 +271,11 @@ describe('Distributor', function () {
     const coverHolderEthBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
     const redeemedAmount = coverHolderEthBalanceAfter.sub(coverHolderEthBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
+
+    const nxmBalance = await token.balanceOf(distributor.address);
+    console.log({
+      nxmBalance: nxmBalance.toString()
+    });
   });
 
   it('allows claim reedeem for accepted DAI cover', async function () {
@@ -401,6 +406,23 @@ describe('Distributor', function () {
     assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
   });
 
+  it('allows transferring out NXM through the use of .approve', async function () {
+    const { distributor, tk: token } = this.contracts;
+
+    const nxmToBeTransferred = ether('100');
+
+    const distributorBalanceBefore = await token.balanceOf(distributor.address);
+    await distributor.approveNXM(member1, nxmToBeTransferred, {
+      from: distributorOwner
+    });
+
+    await token.transferFrom(distributor.address, member1, nxmToBeTransferred, {
+      from: member1
+    });
+
+    const distributorBalanceAfter = await token.balanceOf(distributor.address);
+    assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeTransferred.toString());
+  });
 
   it('allows setting the fee percentage by owner', async function () {
     const { distributor } = this.contracts;
