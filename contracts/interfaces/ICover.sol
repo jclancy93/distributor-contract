@@ -54,4 +54,6 @@ interface ICover {
     );
 
     function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory);
+
+    function switchMembership(address _newAddress) external payable;
 }

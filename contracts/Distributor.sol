@@ -24,7 +24,6 @@ import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
 import "hardhat/console.sol";
 import "./interfaces/IPool.sol";
-import "./interfaces/IMemberRoles.sol";
 
 contract Distributor is
   ERC721("NXMDistributorNFT", "NXMDNFT"),
@@ -69,14 +68,12 @@ contract Distributor is
   ICover cover;
   IERC20 nxmToken;
   IPool pool;
-  IMemberRoles memberRoles;
 
-  constructor(address coverAddress, address nxmTokenAddress, address poolAddress, address memberRolesAddress, uint _feePercentage) public {
+  constructor(address coverAddress, address nxmTokenAddress, address poolAddress, uint _feePercentage) public {
     feePercentage = _feePercentage;
     cover = ICover(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);
     pool = IPool(poolAddress);
-    memberRoles = IMemberRoles(memberRolesAddress);
   }
 
   function buyCover (
@@ -188,9 +185,9 @@ contract Distributor is
     nxmToken.approve(_spender, _value);
   }
 
-  function switchMembership(address _newMembership) external onlyOwner {
-    nxmToken.approve(address(memberRoles), uint(-1));
-    memberRoles.switchMembership(_newMembership);
+  function switchMembership(address newAddress) external onlyOwner {
+    nxmToken.approve(address(cover), uint(-1));
+    cover.switchMembership(newAddress);
   }
 
   function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner {

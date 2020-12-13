@@ -85,4 +85,8 @@ contract CoverMock is ICover {
         }
         revert("CoverMock: Unknown action");
     }
+
+    function switchMembership(address _newAddress) external payable override {
+        revert("Unsupported");
+    }
 }

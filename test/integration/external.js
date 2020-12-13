@@ -9,7 +9,6 @@ function coverToCoverDetailsArray (cover) {
   return [cover.amount, cover.price, cover.priceNXM, cover.expireTime, cover.generationTime];
 }
 
-
 async function enrollMember ({ mr, tk, tc }, members, options = {}) {
 
   const { initialTokens = ether('2500') } = options;
