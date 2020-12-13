@@ -23,6 +23,8 @@ import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
 import "hardhat/console.sol";
+import "./interfaces/IPool.sol";
+import "./interfaces/IMemberRoles.sol";
 
 contract Distributor is
   ERC721("NXMDistributorNFT", "NXMDNFT"),
@@ -66,11 +68,15 @@ contract Distributor is
   mapping(address => uint) public withdrawableTokens;
   ICover cover;
   IERC20 nxmToken;
+  IPool pool;
+  IMemberRoles memberRoles;
 
-  constructor(address coverAddress, address nxmTokenAddress, uint _feePercentage) public {
+  constructor(address coverAddress, address nxmTokenAddress, address poolAddress, address memberRolesAddress, uint _feePercentage) public {
     feePercentage = _feePercentage;
     cover = ICover(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);
+    pool = IPool(poolAddress);
+    memberRoles = IMemberRoles(memberRolesAddress);
   }
 
   function buyCover (
@@ -180,6 +186,29 @@ contract Distributor is
   onlyOwner
   {
     nxmToken.approve(_spender, _value);
+  }
+
+  function switchMembership(address _newMembership) external onlyOwner {
+    nxmToken.approve(address(memberRoles), uint(-1));
+    memberRoles.switchMembership(_newMembership);
+  }
+
+  function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner {
+
+    nxmToken.approve(address(pool), nxmIn);
+    uint balanceBefore = address(this).balance;
+    pool.sellNXM(nxmIn, minEthOut);
+    uint balanceAfter = address(this).balance;
+    withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
+  }
+
+  function deprecated_sellNXM(uint nxmIn) external onlyOwner {
+
+    nxmToken.approve(address(pool), nxmIn);
+    uint balanceBefore = address(this).balance;
+    pool.sellNXMTokens(nxmIn);
+    uint balanceAfter = address(this).balance;
+    withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
   }
 
   function setBuysAllowed(bool _buysAllowed) external onlyOwner {

@@ -7,6 +7,12 @@ contract CoverMock is ICover {
 
     struct Cover {
         address owner;
+        address contractAddress;
+        address coverAsset;
+        uint coverAmount;
+        uint16 coverPeriod;
+        uint8 coverType;
+        bytes data;
         uint fooValue;
     }
 
@@ -22,6 +28,12 @@ contract CoverMock is ICover {
     ) external payable override returns (uint) {
         uint coverId = ++lastCoverId;
         covers[coverId].owner = msg.sender;
+        covers[coverId].contractAddress = contractAddress;
+        covers[coverId].coverAsset = coverAsset;
+        covers[coverId].coverAmount = coverAmount;
+        covers[coverId].coverPeriod = coverPeriod;
+        covers[coverId].coverType = coverType;
+        covers[coverId].data = data;
         return coverId;
     }
 

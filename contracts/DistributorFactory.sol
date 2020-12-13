@@ -23,7 +23,12 @@ contract DistributorFactory {
     function newDistributor(uint _feePercentage) public payable returns (address) {
 
         IMemberRoles memberRoles = IMemberRoles(master.getLatestAddress("MR"));
-        Distributor d = new Distributor(master.getLatestAddress("CO"), master.tokenAddress(), _feePercentage);
+        Distributor d = new Distributor(
+            master.getLatestAddress("CO"),
+            master.tokenAddress(),
+            master.getLatestAddress("P1"),
+            master.getLatestAddress("MR"),
+            _feePercentage);
         d.transferOwnership(msg.sender);
         memberRoles.payJoiningFee{ value: msg.value}(address(d));
 

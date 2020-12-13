@@ -13,7 +13,7 @@ const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank ] = accounts;
+const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank, newMemberAddress ] = accounts;
 
 const DEFAULT_FEE_PERCENTAGE = 500; // 5%
 
@@ -422,6 +422,37 @@ describe('Distributor', function () {
 
     const distributorBalanceAfter = await token.balanceOf(distributor.address);
     assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeTransferred.toString());
+  });
+
+  it('allows selling of NXM', async function () {
+    const { distributor, tk: token, p1: pool  } = this.contracts;
+
+    const nxmToBeSold = ether('100');
+
+    const expectedEth = await p1.ethForNXM(nxmToBeSold());
+    const distributorBalanceBefore = await token.balanceOf(distributor.address);
+    const distributorEthBalanceBefore = await token.balanceOf(distributor.address);
+    await distributor.sellNXM(nxmToBeSold, '0', {
+      from: distributorOwner
+    });
+    const distributorEthBalanceAfter = await token.balanceOf(distributor.address);
+    const distributorBalanceAfter = await token.balanceOf(distributor.address);
+    assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeSold.toString());
+    assert.equal(distributorEthBalanceAfter.sub(distributorEthBalanceBefore).toString(), expectedEth.toString());
+  });
+
+  it.only('allows switching membership to another address', async function () {
+    const { distributor, tk: token, master } = this.contracts;
+
+    await distributor.switchMembership(newMemberAddress, {
+      from: distributorOwner
+    });
+
+    const newAddressIsMember = await master.isMember(newMemberAddress);
+    const distributorIsStillMember = await master.isMember(distributor.address);
+
+    assert(newAddressIsMember);
+    assert(!distributorIsStillMember);
   });
 
   it('allows setting the fee percentage by owner', async function () {
