@@ -34,7 +34,7 @@ contract Distributor is
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-  event ClaimRedeemed (
+  event ClaimPayoutRedeemed (
     uint indexed coverId,
     uint indexed claimId,
     address receiver,
@@ -151,7 +151,7 @@ contract Distributor is
 
     _burn(tokenId);
     _sendAssuredSum(coverAsset, payout);
-    emit ClaimRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, payout, coverAsset);
+    emit ClaimPayoutRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, payout, coverAsset);
   }
 
   function executeCoverAction(uint tokenId, uint8 action, bytes calldata data)
