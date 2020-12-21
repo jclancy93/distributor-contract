@@ -79,7 +79,7 @@ contract Distributor is
   function buyCover (
     address contractAddress,
     address coverAsset,
-    uint coverAmount,
+    uint sumAssured,
     uint16 coverPeriod,
     uint8 coverType,
     bytes calldata data
@@ -89,7 +89,7 @@ contract Distributor is
   {
     require(buysAllowed, "Distributor: buys not allowed");
 
-    uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, coverAmount, coverPeriod, coverType, data);
+    uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     uint buyCoverValue = 0;
     if (coverAsset == ETH) {
@@ -108,7 +108,7 @@ contract Distributor is
     uint coverId = cover.buyCover{value: buyCoverValue }(
       contractAddress,
       coverAsset,
-      coverAmount,
+      sumAssured,
       coverPeriod,
       coverType,
       data

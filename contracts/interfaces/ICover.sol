@@ -20,7 +20,7 @@ interface ICover {
     function buyCover (
         address contractAddress,
         address coverAsset,
-        uint coverAmount,
+        uint sumAssured,
         uint16 coverPeriod,
         uint8 coverType,
         bytes calldata data
@@ -29,7 +29,7 @@ interface ICover {
     function getCoverPrice (
         address contractAddress,
         address coverAsset,
-        uint coverAmount,
+        uint sumAssured,
         uint16 coverPeriod,
         uint8 coverType,
         bytes calldata data

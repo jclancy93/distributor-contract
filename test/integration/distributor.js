@@ -139,8 +139,8 @@ describe('Distributor', function () {
     assert.equal(createdCover.coverPeriod.toString(), cover.period);
     assert.equal(createdCover.contractAddress, cover.contractAddress);
     assert.equal(createdCover.coverAsset, cover.asset);
-    assert.equal(createdCover.premiumNXM.toString(), cover.priceNXM);
-    assert.equal(createdCover.payout.toString(), cover.amount.toString());
+    assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
+    assert.equal(createdCover.amountPaid.toString(), cover.amount.toString());
     // assert.equal(createdCover.validUntil.toString(), cover.expireTime);
   });
 
@@ -180,8 +180,8 @@ describe('Distributor', function () {
     assert.equal(createdCover.coverPeriod.toString(), cover.period);
     assert.equal(createdCover.contractAddress, cover.contractAddress);
     assert.equal(createdCover.coverAsset, cover.asset);
-    assert.equal(createdCover.premiumNXM.toString(), cover.priceNXM);
-    assert.equal(createdCover.payout.toString(), cover.amount.toString());
+    assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
+    assert.equal(createdCover.amountPaid.toString(), cover.amount.toString());
   });
 
   it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {

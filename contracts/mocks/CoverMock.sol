@@ -9,7 +9,7 @@ contract CoverMock is ICover {
         address owner;
         address contractAddress;
         address coverAsset;
-        uint coverAmount;
+        uint sumAssured;
         uint16 coverPeriod;
         uint8 coverType;
         bytes data;
@@ -21,7 +21,7 @@ contract CoverMock is ICover {
     function buyCover (
         address contractAddress,
         address coverAsset,
-        uint coverAmount,
+        uint sumAssured,
         uint16 coverPeriod,
         uint8 coverType,
         bytes calldata data
@@ -30,7 +30,7 @@ contract CoverMock is ICover {
         covers[coverId].owner = msg.sender;
         covers[coverId].contractAddress = contractAddress;
         covers[coverId].coverAsset = coverAsset;
-        covers[coverId].coverAmount = coverAmount;
+        covers[coverId].sumAssured = sumAssured;
         covers[coverId].coverPeriod = coverPeriod;
         covers[coverId].coverType = coverType;
         covers[coverId].data = data;
@@ -40,7 +40,7 @@ contract CoverMock is ICover {
     function getCoverPrice (
         address contractAddress,
         address coverAsset,
-        uint coverAmount,
+        uint sumAssured,
         uint16 coverPeriod,
         uint8 coverType,
         bytes calldata data
