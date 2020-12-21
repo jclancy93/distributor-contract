@@ -219,7 +219,7 @@ describe('Distributor', function () {
       distributor.submitClaim(expectedCoverId, emptyData, {
         from: coverHolder
       }),
-      'Cover: Claim already submitted'
+      'Claims: Claim already submitted'
     );
   });
 
