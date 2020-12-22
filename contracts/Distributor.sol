@@ -26,7 +26,7 @@ import "hardhat/console.sol";
 import "./interfaces/IPool.sol";
 
 contract Distributor is
-  ERC721("NXMDistributorNFT", "NXMDNFT"),
+  ERC721,
   Ownable,
   ReentrancyGuard {
   using SafeMath for uint;
@@ -65,7 +65,17 @@ contract Distributor is
   IERC20 nxmToken;
   IPool pool;
 
-  constructor(address coverAddress, address nxmTokenAddress, address poolAddress, uint _feePercentage) public {
+  constructor(
+    address coverAddress,
+    address nxmTokenAddress,
+    address poolAddress,
+    uint _feePercentage,
+    string memory tokenName,
+    string memory tokenSymbol
+  )
+  ERC721(tokenName, tokenSymbol)
+  public
+  {
     feePercentage = _feePercentage;
     cover = ICover(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);

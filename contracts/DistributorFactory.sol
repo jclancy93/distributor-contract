@@ -20,14 +20,21 @@ contract DistributorFactory {
         master = INXMaster(masterAddress);
     }
 
-    function newDistributor(uint _feePercentage) public payable returns (address) {
+    function newDistributor(
+        uint _feePercentage,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) public payable returns (address) {
 
         IMemberRoles memberRoles = IMemberRoles(master.getLatestAddress("MR"));
         Distributor d = new Distributor(
             master.getLatestAddress("CO"),
             master.tokenAddress(),
             master.getLatestAddress("P1"),
-            _feePercentage);
+            _feePercentage,
+            tokenName,
+            tokenSymbol
+        );
         d.transferOwnership(msg.sender);
         memberRoles.payJoiningFee{ value: msg.value}(address(d));
 

@@ -92,7 +92,12 @@ describe('Distributor', function () {
     const distributorFactory = await DistributorFactory.new(master.address);
 
     const joiningFee = ether('0.002');
-    const tx = await distributorFactory.newDistributor(DEFAULT_FEE_PERCENTAGE, { from: distributorOwner, value: joiningFee });
+    const tx = await distributorFactory.newDistributor(
+      DEFAULT_FEE_PERCENTAGE,
+      'TestDistributor',
+      'TD',
+      { from: distributorOwner, value: joiningFee }
+    );
     assert.equal(tx.logs.length, 1);
     const distributorAddress = tx.logs[0].args.contractAddress;
 
