@@ -1,4 +1,4 @@
-/* Copyright (C) 2017 NexusMutual.io
+/* Copyright (C) 2020 NexusMutual.io
 
   This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ contract Distributor is
     uint indexed coverId,
     uint indexed claimId,
     address receiver,
-    uint payout,
+    uint amountPaid,
     address coverAsset
   );
 
@@ -86,6 +86,7 @@ contract Distributor is
   )
      external
      payable
+     nonReentrant
   {
     require(buysAllowed, "Distributor: buys not allowed");
 
@@ -143,15 +144,23 @@ contract Distributor is
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    require(cover.payoutIsCompleted(tokens[tokenId].claimId), "Distributor: Claim accepted but payout not completed");
+    uint claimId = tokens[tokenId].claimId;
+    require(cover.payoutIsCompleted(claimId), "Distributor: Claim accepted but payout not completed");
     (
       /* status */, /* sumAssured */, /* coverPeriod */, /* validUntil */, /* contractAddress */,
-      address coverAsset, /* premiumNXM */, uint payout
+      address coverAsset, /* premiumNXM */, uint amountPaid
     ) = cover.getCover(tokenId);
 
     _burn(tokenId);
-    _sendAssuredSum(coverAsset, payout);
-    emit ClaimPayoutRedeemed(tokenId, tokens[tokenId].claimId, msg.sender, payout, coverAsset);
+    if (coverAsset == ETH) {
+      (bool ok, /* data */) = msg.sender.call{value: amountPaid}("");
+      require(ok, "Distributor: Transfer to NFT owner failed");
+    } else {
+      IERC20 erc20 = IERC20(coverAsset);
+      erc20.safeTransfer(msg.sender, amountPaid);
+    }
+
+    emit ClaimPayoutRedeemed(tokenId, claimId, msg.sender, amountPaid, coverAsset);
   }
 
   function executeCoverAction(uint tokenId, uint8 action, bytes calldata data)
@@ -161,21 +170,6 @@ contract Distributor is
     returns (bytes memory)
   {
     return cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
-  }
-
-  function _sendAssuredSum(
-    address coverAsset,
-    uint sumAssured
-    )
-    internal
-  {
-    if (coverAsset == ETH) {
-      (bool ok, /* data */) = msg.sender.call{value: sumAssured}("");
-      require(ok, "Distributor: Transfer to Pool failed");
-      return;
-    }
-    IERC20 erc20 = IERC20(coverAsset);
-    erc20.safeTransfer(msg.sender, sumAssured);
   }
 
   function approveNXM(address _spender, uint256 _value)
