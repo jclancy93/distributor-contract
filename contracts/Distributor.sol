@@ -52,15 +52,11 @@ contract Distributor is
     uint indexed coverId,
     address indexed buyer,
     address indexed contractAddress,
-    uint feePercentage
+    uint feePercentage,
+    uint coverPrice
   );
 
-  struct Token {
-    uint claimId;
-    uint price;
-  }
-
-  mapping (uint => Token) public tokens;
+  mapping (uint => uint) public claimIds;
   uint public feePercentage; // with 2 decimals. eg.: 10.00% stored as 1000
   bool buysAllowed = true;
 
@@ -119,9 +115,8 @@ contract Distributor is
 
     // mint token using the coverId as a tokenId (guaranteed unique)
     _mint(msg.sender, coverId);
-    tokens[coverId].price = coverPrice;
 
-    emit CoverBought(coverId, msg.sender, contractAddress, feePercentage);
+    emit CoverBought(coverId, msg.sender, contractAddress, feePercentage, coverPrice);
   }
 
   function submitClaim(
@@ -133,7 +128,7 @@ contract Distributor is
   {
     // coverId = tokenId
     uint claimId = cover.submitClaim(tokenId, data);
-    tokens[tokenId].claimId = claimId;
+    claimIds[tokenId] = claimId;
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
 
@@ -144,7 +139,7 @@ contract Distributor is
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    uint claimId = tokens[tokenId].claimId;
+    uint claimId = claimIds[tokenId];
     require(cover.payoutIsCompleted(claimId), "Distributor: Claim accepted but payout not completed");
     (
       /* status */, /* sumAssured */, /* coverPeriod */, /* validUntil */, /* contractAddress */,
