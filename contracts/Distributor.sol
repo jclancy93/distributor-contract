@@ -62,6 +62,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   IERC20 nxmToken;
   IPool pool;
 
+  modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
+    require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
+    _;
+  }
+
   constructor(
     address coverAddress,
     address nxmTokenAddress,
@@ -230,11 +235,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
 
   function setFeePercentage(uint _feePercentage) external onlyOwner {
     feePercentage = _feePercentage;
-  }
-
-  modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
-    require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
-    _;
   }
 
   fallback () payable external {
