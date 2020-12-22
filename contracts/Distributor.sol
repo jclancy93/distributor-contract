@@ -25,10 +25,7 @@ import "./interfaces/ICover.sol";
 import "hardhat/console.sol";
 import "./interfaces/IPool.sol";
 
-contract Distributor is
-  ERC721,
-  Ownable,
-  ReentrancyGuard {
+contract Distributor is ERC721, Ownable, ReentrancyGuard {
   using SafeMath for uint;
   using SafeERC20 for IERC20;
 
@@ -150,11 +147,8 @@ contract Distributor is
     nonReentrant
   {
     uint claimId = claimIds[tokenId];
-    require(cover.payoutIsCompleted(claimId), "Distributor: Claim accepted but payout not completed");
-    (
-      /* status */, /* sumAssured */, /* coverPeriod */, /* validUntil */, /* contractAddress */,
-      address coverAsset, /* premiumNXM */, uint amountPaid
-    ) = cover.getCover(tokenId);
+    (bool payoutCompleted, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(tokenId, claimId);
+    require(payoutCompleted, "Distributor: Claim accepted but payout not completed");
 
     _burn(tokenId);
     if (coverAsset == ETH) {
@@ -167,6 +161,7 @@ contract Distributor is
 
     emit ClaimPayoutRedeemed(tokenId, claimId, msg.sender, amountPaid, coverAsset);
   }
+
 
   function executeCoverAction(uint tokenId, uint8 action, bytes calldata data)
     external

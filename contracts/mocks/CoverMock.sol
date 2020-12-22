@@ -54,25 +54,8 @@ contract CoverMock is ICover {
         revert("Unsupported");
     }
 
-    function payoutIsCompleted(uint claimId) external view override returns (bool) {
+    function getPayoutOutcome(uint coverId, uint claimId) external view override returns (bool, uint, address) {
         revert("Unsupported");
-    }
-
-    function getCover(uint coverId)
-    external
-    view
-    override
-    returns (
-        uint8 status,
-        uint sumAssured,
-        uint16 coverPeriod,
-        uint validUntil,
-        address contractAddress,
-        address coverAsset,
-        uint premiumNXM,
-        uint payout
-    ) {
-        revert('Unsupported');
     }
 
     function executeCoverAction(uint coverId, uint8 action, bytes calldata data) external payable override returns (bytes memory) {

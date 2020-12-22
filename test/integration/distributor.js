@@ -145,7 +145,6 @@ describe('Distributor', function () {
     assert.equal(createdCover.contractAddress, cover.contractAddress);
     assert.equal(createdCover.coverAsset, cover.asset);
     assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
-    assert.equal(createdCover.amountPaid.toString(), cover.amount.toString());
     // assert.equal(createdCover.validUntil.toString(), cover.expireTime);
   });
 
@@ -186,7 +185,6 @@ describe('Distributor', function () {
     assert.equal(createdCover.contractAddress, cover.contractAddress);
     assert.equal(createdCover.coverAsset, cover.asset);
     assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
-    assert.equal(createdCover.amountPaid.toString(), cover.amount.toString());
   });
 
   it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {
@@ -257,7 +255,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const payoutCompleted = await coverContract.payoutIsCompleted(expectedClaimId);
+    const { completed: payoutCompleted }  = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
     assert(payoutCompleted);
 
     const distributorEthBalanceAfterPayout = toBN(await web3.eth.getBalance(distributor.address));
@@ -309,7 +307,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const payoutCompleted = await coverContract.payoutIsCompleted(expectedClaimId);
+    const { completed: payoutCompleted }  = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
     assert(payoutCompleted);
 
     const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);

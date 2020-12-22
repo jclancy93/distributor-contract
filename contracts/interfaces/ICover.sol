@@ -37,21 +37,7 @@ interface ICover {
 
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
-    function payoutIsCompleted(uint claimId) external view returns (bool);
-
-    function getCover(uint coverId)
-    external
-    view
-    returns (
-        uint8 status,
-        uint sumAssured,
-        uint16 coverPeriod,
-        uint validUntil,
-        address contractAddress,
-        address coverAsset,
-        uint premiumNXM,
-        uint payout
-    );
+    function getPayoutOutcome(uint coverId, uint claimId) external view returns (bool completed, uint paidAmount, address asset);
 
     function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory);
 
