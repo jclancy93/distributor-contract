@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 NexusMutual.io
+/* Copyright (C) 2021 NexusMutual.io
 
   This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ contract Distributor is
   event ClaimPayoutRedeemed (
     uint indexed coverId,
     uint indexed claimId,
-    address receiver,
+    address indexed receiver,
     uint amountPaid,
     address coverAsset
   );
