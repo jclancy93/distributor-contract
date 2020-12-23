@@ -4,44 +4,12 @@ const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
 const { toBN } = web3.utils;
-const { hex } = require('../utils').helpers;
+const { hex, ETH, ZERO_ADDRESS, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
 const BN = web3.utils.BN;
-
-const ERC20Mock = artifacts.require('ERC20Mock');
-const CoverMock = artifacts.require('CoverMock');
-const Distributor = artifacts.require('Distributor');
-
-const DEFAULT_FEE_PERCENTAGE = 500; // 5.00%
-
-const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank ] = accounts;
 
-async function setup () {
-
-  const nxmToken = await ERC20Mock.new();
-  const cover = await CoverMock.new();
-  const unused = '0x0000000000000000000000000000000000000023';
-  const distributor = await Distributor.new(cover.address, nxmToken.address, unused, DEFAULT_FEE_PERCENTAGE);
-  this.contracts = {
-    nxmToken,
-    cover,
-    distributor
-  };
-}
-
 describe('executeCoverAction', function () {
-
-  before(reset);
-  before(setup);
-
-  beforeEach(async function () {
-    this.snapshotId = await takeSnapshot();
-  });
-
-  afterEach(async function () {
-    await revertToSnapshot(this.snapshotId);
-  });
 
   it('executes custom action on an owned cover', async function () {
     const { distributor, cover: coverContract } = this.contracts;
@@ -79,7 +47,7 @@ describe('executeCoverAction', function () {
 
     const action = 0;
     const executeDate = web3.eth.abi.encodeParameters(['uint'], [30]);
-    await distributor.executeCoverAction(coverId, action, executeDate, {
+    await distributor.executeCoverAction(coverId, '0', ZERO_ADDRESS, action, executeDate, {
       from: coverHolder
     });
 

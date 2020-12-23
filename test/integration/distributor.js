@@ -94,8 +94,8 @@ describe('Distributor', function () {
     const joiningFee = ether('0.002');
     const tx = await distributorFactory.newDistributor(
       DEFAULT_FEE_PERCENTAGE,
-      'TestDistributor',
-      'TD',
+      'IntegrationTestToken',
+      'ITT',
       { from: distributorOwner, value: joiningFee }
     );
     assert.equal(tx.logs.length, 1);

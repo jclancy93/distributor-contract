@@ -7,4 +7,16 @@ const parseLogs = tx => {
   });
 };
 
-module.exports = { hex, parseLogs };
+const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const DEFAULT_FEE_PERCENTAGE = 500; // 5%
+
+module.exports = {
+  hex,
+  parseLogs,
+  ETH,
+  ZERO_ADDRESS,
+  DEFAULT_FEE_PERCENTAGE
+};
