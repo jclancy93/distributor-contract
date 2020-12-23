@@ -58,6 +58,23 @@ contract CoverMock is ICover {
         revert("Unsupported");
     }
 
+    function getCover(uint coverId)
+    external
+    view
+    override
+    returns (
+        uint8 status,
+        uint sumAssured,
+        uint16 coverPeriod,
+        uint validUntil,
+        address contractAddress,
+        address coverAsset,
+        uint premiumInNXM,
+        address memberAddress
+    ) {
+        revert("Unsupported");
+    }
+
     function executeCoverAction(uint coverId, uint8 action, bytes calldata data) external payable override returns (bytes memory, uint) {
         require(covers[coverId].owner == msg.sender, "CoverMock: Not owner of cover");
 

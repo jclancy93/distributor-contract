@@ -139,7 +139,7 @@ describe('Distributor', function () {
       feePercentage: DEFAULT_FEE_PERCENTAGE.toString()
     });
 
-    const createdCover = await coverContract.getCover(expectedCoverId);
+    const createdCover = await distributor.getCover(expectedCoverId);
     assert.equal(createdCover.sumAssured.toString(), cover.amount.toString());
     assert.equal(createdCover.coverPeriod.toString(), cover.period);
     assert.equal(createdCover.contractAddress, cover.contractAddress);

@@ -35,6 +35,20 @@ interface ICover {
         bytes calldata data
     ) external view returns (uint coverPrice);
 
+    function getCover(uint coverId)
+    external
+    view
+    returns (
+        uint8 status,
+        uint sumAssured,
+        uint16 coverPeriod,
+        uint validUntil,
+        address contractAddress,
+        address coverAsset,
+        uint premiumInNXM,
+        address memberAddress
+    );
+
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
     function getPayoutOutcome(uint coverId, uint claimId) external view returns (bool completed, uint paidAmount, address asset);
