@@ -59,9 +59,9 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   bool buysAllowed = true;
 
   mapping(address => uint) public withdrawableTokens;
-  ICover cover;
-  IERC20 nxmToken;
-  INXMaster master;
+  ICover immutable cover;
+  IERC20 immutable nxmToken;
+  INXMaster immutable master;
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
     require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
@@ -191,7 +191,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner {
-    
+
     address poolAddress = master.getLatestAddress("P1");
     nxmToken.approve(poolAddress, nxmIn);
     uint balanceBefore = address(this).balance;
