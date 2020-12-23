@@ -104,7 +104,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint buyCoverValue = 0;
     if (coverAsset == ETH) {
       require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");
-      uint remainder = msg.value - coverPriceWithFee;
+      uint remainder = msg.value.sub(coverPriceWithFee);
       // solhint-disable-next-line avoid-low-level-calls
       (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
       require(ok, "Distributor: Returning ETH remainder to sender failed.");
@@ -133,7 +133,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   function submitClaim(
-    uint256 tokenId,
+    uint tokenId,
     bytes calldata data
   )
     external
@@ -168,14 +168,31 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     emit ClaimPayoutRedeemed(tokenId, claimId, msg.sender, amountPaid, coverAsset);
   }
 
-
-  function executeCoverAction(uint tokenId, uint8 action, bytes calldata data)
+  function executeCoverAction(uint tokenId, uint assetAmount, address asset, uint8 action, bytes calldata data)
     external
     payable
     onlyTokenApprovedOrOwner(tokenId)
-    returns (bytes memory)
+    nonReentrant
+    returns (bytes memory response, uint withheldAmount)
   {
-    return cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
+    if (assetAmount > 0) {
+      if (asset == ETH) {
+        (response, withheldAmount) = cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
+        uint remainder = assetAmount.sub(withheldAmount);
+        (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
+        require(ok, "Distributor: Returning ETH remainder to sender failed.");
+        return (response, withheldAmount);
+      }
+
+      IERC20 token = IERC20(asset);
+      token.safeTransferFrom(msg.sender, address(this), assetAmount);
+      token.safeApprove(address(cover), assetAmount);
+      (response, withheldAmount) = cover.executeCoverAction(tokenId, action, data);
+      uint remainder = assetAmount.sub(withheldAmount);
+      token.safeTransfer(msg.sender, remainder);
+      return (response, withheldAmount);
+    }
+    return cover.executeCoverAction(tokenId, action, data);
   }
 
   function approveNXM(address _spender, uint256 _value)

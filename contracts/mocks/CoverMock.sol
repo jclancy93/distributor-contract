@@ -58,13 +58,13 @@ contract CoverMock is ICover {
         revert("Unsupported");
     }
 
-    function executeCoverAction(uint coverId, uint8 action, bytes calldata data) external payable override returns (bytes memory) {
+    function executeCoverAction(uint coverId, uint8 action, bytes calldata data) external payable override returns (bytes memory, uint) {
         require(covers[coverId].owner == msg.sender, "CoverMock: Not owner of cover");
 
         if (action == 0) {
             uint incrementValue = abi.decode(data, (uint));
             covers[coverId].fooValue += incrementValue;
-            return abi.encode(covers[coverId].fooValue);
+            return (abi.encode(covers[coverId].fooValue), 0);
         }
         revert("CoverMock: Unknown action");
     }

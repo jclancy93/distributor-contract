@@ -39,7 +39,7 @@ interface ICover {
 
     function getPayoutOutcome(uint coverId, uint claimId) external view returns (bool completed, uint paidAmount, address asset);
 
-    function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory);
+    function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory, uint);
 
     function switchMembership(address _newAddress) external payable;
 }
