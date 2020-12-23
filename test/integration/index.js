@@ -8,8 +8,6 @@ describe('INTEGRATION TESTS', function () {
 
   beforeEach(async function () {
     this.snapshotId = await takeSnapshot();
-
-
   });
 
   afterEach(async function () {

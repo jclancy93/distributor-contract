@@ -42,6 +42,5 @@ module.exports = {
   setup,
   enroll,
   getQuote,
-  coverToCoverDetailsArray
-}
-
+  coverToCoverDetailsArray,
+};

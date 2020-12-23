@@ -15,15 +15,15 @@ async function setup () {
     ZERO_ADDRESS,
     DEFAULT_FEE_PERCENTAGE,
     'UnitTestToken',
-    'UTT'
+    'UTT',
   );
   this.contracts = {
     nxmToken,
     cover,
-    distributor
+    distributor,
   };
 }
 
 module.exports = {
-  setup
-}
+  setup,
+};

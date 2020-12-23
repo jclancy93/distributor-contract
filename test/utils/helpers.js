@@ -18,5 +18,5 @@ module.exports = {
   parseLogs,
   ETH,
   ZERO_ADDRESS,
-  DEFAULT_FEE_PERCENTAGE
+  DEFAULT_FEE_PERCENTAGE,
 };

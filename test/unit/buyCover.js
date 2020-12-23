@@ -1,5 +1,3 @@
-const { takeSnapshot, revertToSnapshot, reset } = require('../utils').evm;
-
 const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
@@ -8,8 +6,7 @@ const { hex, ZERO_ADDRESS, ETH, DEFAULT_FEE_PERCENTAGE } = require('../utils').h
 const BN = web3.utils.BN;
 const Distributor = artifacts.require('Distributor');
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank ] = accounts;
-
+const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
 
 const coverTemplate = {
   amount: ether('10'),
@@ -29,7 +26,7 @@ describe('buyCover', function () {
   it('rejects buyCover if allowBuys = false', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
-    const cover = {...coverTemplate}
+    const cover = { ...coverTemplate };
     const basePrice = toBN(cover.price);
     const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
 
@@ -46,16 +43,16 @@ describe('buyCover', function () {
         cover.type,
         data, {
           from: coverHolder,
-          value: priceWithFee
+          value: priceWithFee,
         }),
-      'Distributor: buys not allowed'
+      'Distributor: buys not allowed',
     );
   });
 
   it('successfully buys cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
-    const cover = {...coverTemplate}
+    const cover = { ...coverTemplate };
     const basePrice = toBN(cover.price);
     const expectedFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
     const priceWithFee = expectedFee.add(basePrice);
@@ -70,7 +67,7 @@ describe('buyCover', function () {
       cover.type,
       data, {
         from: coverHolder,
-        value: priceWithFee
+        value: priceWithFee,
       });
     const expectedCoverId = 1;
 
@@ -78,7 +75,7 @@ describe('buyCover', function () {
       coverId: expectedCoverId.toString(),
       buyer: coverHolder,
       contractAddress: cover.contractAddress,
-      feePercentage: DEFAULT_FEE_PERCENTAGE.toString()
+      feePercentage: DEFAULT_FEE_PERCENTAGE.toString(),
     });
 
     const totalSupply = await distributor.totalSupply();
@@ -90,4 +87,4 @@ describe('buyCover', function () {
     const withdrawableEther = await distributor.withdrawableTokens(ETH);
     assert.equal(withdrawableEther.toString(), expectedFee.toString());
   });
-})
+});

@@ -1,5 +1,3 @@
-const { takeSnapshot, revertToSnapshot, reset } = require('../utils').evm;
-
 const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
@@ -7,7 +5,7 @@ const { toBN } = web3.utils;
 const { hex, ETH, ZERO_ADDRESS, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
 const BN = web3.utils.BN;
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank ] = accounts;
+const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
 
 describe('executeCoverAction', function () {
 
@@ -40,7 +38,7 @@ describe('executeCoverAction', function () {
       cover.type,
       data, {
         from: coverHolder,
-        value: priceWithFee
+        value: priceWithFee,
       });
 
     const coverId = 1;
@@ -48,10 +46,10 @@ describe('executeCoverAction', function () {
     const action = 0;
     const executeDate = web3.eth.abi.encodeParameters(['uint'], [30]);
     await distributor.executeCoverAction(coverId, '0', ZERO_ADDRESS, action, executeDate, {
-      from: coverHolder
+      from: coverHolder,
     });
 
     const { fooValue } = await coverContract.covers(coverId);
     assert.equal(fooValue.toString(), '30');
   });
-})
+});
