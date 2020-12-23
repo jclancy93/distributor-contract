@@ -195,11 +195,12 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     return cover.executeCoverAction(tokenId, action, data);
   }
 
-  function approveNXM(address _spender, uint256 _value)
-  public
-  onlyOwner
-  {
-    nxmToken.approve(_spender, _value);
+  function approveNXM(address spender, uint256 value) public onlyOwner {
+    nxmToken.approve(spender, value);
+  }
+
+  function withdrawNXM(address receiver, uint256 value) public onlyOwner {
+    nxmToken.safeTransfer(receiver, value);
   }
 
   function switchMembership(address newAddress) external onlyOwner {

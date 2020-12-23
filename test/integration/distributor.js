@@ -419,6 +419,20 @@ describe('Distributor', function () {
     assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeTransferred.toString());
   });
 
+  it('allows transferring out NXM with transferNXM', async function () {
+    const { distributor, tk: token } = this.contracts;
+
+    const nxmToBeTransferred = ether('100');
+
+    const distributorBalanceBefore = await token.balanceOf(distributor.address);
+    await distributor.withdrawNXM(member1, nxmToBeTransferred, {
+      from: distributorOwner
+    });
+
+    const distributorBalanceAfter = await token.balanceOf(distributor.address);
+    assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeTransferred.toString());
+  });
+
   it.skip('allows selling of NXM', async function () {
     const { distributor, tk: token, p1: pool } = this.contracts;
 
