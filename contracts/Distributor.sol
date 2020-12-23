@@ -274,6 +274,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     feePercentage = _feePercentage;
   }
 
-  fallback () payable external {
+  receive () payable external {
   }
 }

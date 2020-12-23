@@ -5,10 +5,7 @@ import "./interfaces/INXMaster.sol";
 import "./interfaces/IMemberRoles.sol";
 
 contract DistributorFactory {
-
-    address coverAddress;
-
-    INXMaster master;
+    INXMaster immutable master;
 
     event DistributorCreated(
         address contractAddress,
