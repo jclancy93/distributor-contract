@@ -30,7 +30,7 @@ contract DistributorFactory {
         Distributor d = new Distributor(
             master.getLatestAddress("CO"),
             master.tokenAddress(),
-            master.getLatestAddress("P1"),
+            address(master),
             _feePercentage,
             tokenName,
             tokenSymbol

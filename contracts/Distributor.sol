@@ -24,6 +24,7 @@ import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
 import "hardhat/console.sol";
 import "./interfaces/IPool.sol";
+import "./interfaces/INXMaster.sol";
 
 contract Distributor is ERC721, Ownable, ReentrancyGuard {
   using SafeMath for uint;
@@ -60,7 +61,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   mapping(address => uint) public withdrawableTokens;
   ICover cover;
   IERC20 nxmToken;
-  IPool pool;
+  INXMaster master;
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
     require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
@@ -70,7 +71,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   constructor(
     address coverAddress,
     address nxmTokenAddress,
-    address poolAddress,
+    address masterAddress,
     uint _feePercentage,
     string memory tokenName,
     string memory tokenSymbol
@@ -81,7 +82,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     feePercentage = _feePercentage;
     cover = ICover(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);
-    pool = IPool(poolAddress);
+    master = INXMaster(masterAddress);
   }
 
   function buyCover (
@@ -190,19 +191,21 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner {
-
-    nxmToken.approve(address(pool), nxmIn);
+    
+    address poolAddress = master.getLatestAddress("P1");
+    nxmToken.approve(poolAddress, nxmIn);
     uint balanceBefore = address(this).balance;
-    pool.sellNXM(nxmIn, minEthOut);
+    IPool(poolAddress).sellNXM(nxmIn, minEthOut);
     uint balanceAfter = address(this).balance;
     withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
   }
 
   function deprecated_sellNXM(uint nxmIn) external onlyOwner {
 
-    nxmToken.approve(address(pool), nxmIn);
+    address poolAddress = master.getLatestAddress("P1");
+    nxmToken.approve(poolAddress, nxmIn);
     uint balanceBefore = address(this).balance;
-    pool.sellNXMTokens(nxmIn);
+    IPool(poolAddress).sellNXMTokens(nxmIn);
     uint balanceAfter = address(this).balance;
     withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
   }
