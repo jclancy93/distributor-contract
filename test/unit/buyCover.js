@@ -49,6 +49,29 @@ describe('buyCover', function () {
     );
   });
 
+  it('foo buy', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const cover = { ...coverTemplate };
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    const buyCoverTx = await distributor.buyCover(
+      cover.contractAddress,
+      cover.asset,
+      cover.amount,
+      cover.period,
+      cover.type,
+      data, {
+        from: coverHolder,
+        value: priceWithFee,
+      });
+    const expectedCoverId = 1;
+  });
+
   it('successfully buys cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 

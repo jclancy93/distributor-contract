@@ -1,9 +1,17 @@
 import "hardhat/console.sol";
 import "../interfaces/ICover.sol";
+import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-v3/math/SafeMath.sol";
+import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
 
-contract CoverMock is ICover {
+contract CoverMock is ICover, ReentrancyGuard {
+    using SafeMath for uint;
+    using SafeERC20 for IERC20;
 
     uint lastCoverId = 0;
+
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     struct Cover {
         address owner;
@@ -13,7 +21,7 @@ contract CoverMock is ICover {
         uint16 coverPeriod;
         uint8 coverType;
         bytes data;
-        uint fooValue;
+        uint topUp;
     }
 
     mapping (uint => Cover) public covers;
@@ -75,13 +83,32 @@ contract CoverMock is ICover {
         revert("Unsupported");
     }
 
-    function executeCoverAction(uint coverId, uint8 action, bytes calldata data) external payable override returns (bytes memory, uint) {
+    /**
+    *
+    */
+    function executeCoverAction(uint coverId, uint8 action, bytes calldata data)
+    external
+    payable
+    override
+    returns (bytes memory, uint)
+    {
         require(covers[coverId].owner == msg.sender, "CoverMock: Not owner of cover");
 
         if (action == 0) {
-            uint incrementValue = abi.decode(data, (uint));
-            covers[coverId].fooValue += incrementValue;
-            return (abi.encode(covers[coverId].fooValue), 0);
+            require(covers[coverId].coverAsset == ETH, "Cover is not an ETH cover");
+            uint topUpValue = abi.decode(data, (uint));
+            require(msg.value >= topUpValue, "msg.value < topUpValue");
+            covers[coverId].topUp += topUpValue;
+            uint remainder = msg.value.sub(topUpValue);
+            (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
+            require(ok, "CoverMock: Returning ETH remainder to sender failed.");
+            return (abi.encode(covers[coverId].topUp), topUpValue);
+        } else if (action == 1) {
+            uint topUpValue = abi.decode(data, (uint));
+            IERC20 token = IERC20(covers[coverId].coverAsset);
+            token.safeTransferFrom(msg.sender, address(this), topUpValue);
+            covers[coverId].topUp += topUpValue;
+            return (abi.encode(covers[coverId].topUp), topUpValue);
         }
         revert("CoverMock: Unknown action");
     }
