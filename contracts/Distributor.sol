@@ -112,7 +112,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     } else {
       IERC20 token = IERC20(coverAsset);
       token.safeTransferFrom(msg.sender, address(this), coverPriceWithFee);
-      token.safeApprove(address(cover), coverPrice);
+      token.approve(address(cover), coverPrice);
     }
 
     uint coverId = cover.buyCover{value: buyCoverValue }(
@@ -186,7 +186,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
 
       IERC20 token = IERC20(asset);
       token.safeTransferFrom(msg.sender, address(this), assetAmount);
-      token.safeApprove(address(cover), assetAmount);
+      token.approve(address(cover), assetAmount);
       (response, withheldAmount) = cover.executeCoverAction(tokenId, action, data);
       uint remainder = assetAmount.sub(withheldAmount);
       token.safeTransfer(msg.sender, remainder);

@@ -7,7 +7,7 @@ const BN = web3.utils.BN;
 
 const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
 
-describe.only('executeCoverAction', function () {
+describe('executeCoverAction', function () {
 
   beforeEach(async function () {
     const { dai } = this.contracts;
@@ -66,7 +66,7 @@ describe.only('executeCoverAction', function () {
     assert.equal(coverContractBalanceAfter.sub(coverContractBalanceBefore).toString(), desiredTopUpAmount.toString());
   });
 
-  it.only('executes custom action on an owned cover with a DAI transfer', async function () {
+  it('executes custom action on an owned cover with a DAI transfer', async function () {
     const { distributor, cover: coverContract, dai } = this.contracts;
 
     const cover = {
