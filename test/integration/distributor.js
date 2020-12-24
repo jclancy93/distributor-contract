@@ -383,12 +383,20 @@ describe('Distributor', function () {
       from: coverHolder,
     });
     const daiCoversCount = 2;
+    let totalPrice = toBN('0');
     for (let i = 0; i < daiCoversCount; i++) {
-      const cover = { ...daiCoverTemplate, generationTime: generationTime++ };
+
+      const price =  toBN(daiCoverTemplate.price).muln(i + 1);
+      const cover = {
+        ...daiCoverTemplate,
+        generationTime: generationTime++,
+        price: price.toString()
+      };
+      totalPrice = totalPrice.add(price);
       await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
     }
 
-    const daiWithdrawAmount = toBN(daiCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(daiCoversCount);
+    const daiWithdrawAmount = totalPrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
     const withdrawableDAI = await distributor.withdrawableTokens(dai.address);
     assert.equal(withdrawableDAI.toString(), daiWithdrawAmount.toString());
 
