@@ -470,18 +470,19 @@ describe('Distributor', function () {
     assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeTransferred.toString());
   });
 
-  it.skip('allows selling of NXM', async function () {
+  it('allows selling of NXM', async function () {
     const { distributor, tk: token, p1: pool } = this.contracts;
 
     const nxmToBeSold = ether('100');
 
-    const expectedEth = await p1.ethForNXM(nxmToBeSold());
+    const expectedEth = await pool.getEthForNXM(nxmToBeSold);
     const distributorBalanceBefore = await token.balanceOf(distributor.address);
-    const distributorEthBalanceBefore = await token.balanceOf(distributor.address);
-    await distributor.sellNXM(nxmToBeSold, '0', {
+    const distributorEthBalanceBefore = toBN(await web3.eth.getBalance(distributor.address));
+    await distributor.sellNXM(nxmToBeSold, expectedEth, {
       from: distributorOwner,
+      gasPrice: 0
     });
-    const distributorEthBalanceAfter = await token.balanceOf(distributor.address);
+    const distributorEthBalanceAfter = toBN(await web3.eth.getBalance(distributor.address));
     const distributorBalanceAfter = await token.balanceOf(distributor.address);
     assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeSold.toString());
     assert.equal(distributorEthBalanceAfter.sub(distributorEthBalanceBefore).toString(), expectedEth.toString());
