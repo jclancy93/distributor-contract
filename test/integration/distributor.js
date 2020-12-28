@@ -12,6 +12,7 @@ const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
+const ERC20DetailedMock = artifacts.require('ERC20DetailedMock');
 
 const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank, newMemberAddress] = accounts;
 
@@ -184,6 +185,35 @@ describe('Distributor', function () {
     assert.equal(createdCover.contractAddress, cover.contractAddress);
     assert.equal(createdCover.coverAsset, cover.asset);
     assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
+  });
+
+  it('reverts when cover asset is not supported', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+
+    const unsupportedToken = await ERC20DetailedMock.new();
+
+    const cover = {
+      amount: ether('10000'),
+      price: '3362445813369838',
+      priceNXM: '744892736679184',
+      expireTime: '7972408607',
+      generationTime: '7972408607001',
+      asset: unsupportedToken.address,
+      currency: hex('UTK'),
+      period: 120,
+      type: 0,
+      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+    };
+
+    const buyerTokenFunds = ether('20000');
+    await unsupportedToken.mint(coverHolder, buyerTokenFunds, {
+      from: coverHolder,
+    });
+
+    await expectRevert(
+      buyCover({ cover, coverHolder, distributor, qt, assetToken: unsupportedToken }),
+      'Cover: unknown asset'
+    );
   });
 
   it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {
