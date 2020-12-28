@@ -8,6 +8,8 @@ const Distributor = artifacts.require('Distributor');
 
 const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
 
+const CoverBuyer = artifacts.require('CoverBuyer');
+
 
 describe('buyCover', function () {
 
@@ -36,7 +38,7 @@ describe('buyCover', function () {
     contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
   };
 
-  it('rejects buyCover if allowBuys = false', async function () {
+  it('reverts if allowBuys = false', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
@@ -62,7 +64,7 @@ describe('buyCover', function () {
     );
   });
 
-  it('foo buy', async function () {
+  it('reverts if insufficient ETH sent', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
@@ -72,17 +74,103 @@ describe('buyCover', function () {
 
     const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
 
-    const buyCoverTx = await distributor.buyCover(
-      cover.contractAddress,
-      cover.asset,
-      cover.amount,
-      cover.period,
-      cover.type,
-      data, {
-        from: coverHolder,
-        value: priceWithFee,
-      });
+    await expectRevert(
+      distributor.buyCover(
+        cover.contractAddress,
+        cover.asset,
+        cover.amount,
+        cover.period,
+        cover.type,
+        data, {
+          from: coverHolder,
+          value: priceWithFee.subn(1),
+        }),
+      'Distributor: Insufficient ETH sent'
+    );
     const expectedCoverId = 1;
+  });
+
+  it('reverts if cover buyer is a contract that rejects eth payments', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    const coverBuyer = await CoverBuyer.new(distributor.address);
+
+    await expectRevert(
+      coverBuyer.buyCover(
+        cover.contractAddress,
+        cover.asset,
+        cover.amount,
+        cover.period,
+        cover.type,
+        data, {
+          from: coverHolder,
+          value: priceWithFee,
+        }),
+      'Distributor: Returning ETH remainder to sender failed.'
+    );
+  });
+
+  it('reverts if payment token approval in insufficient', async function () {
+    const { distributor, cover: coverContract, dai } = this.contracts;
+
+    const cover = { ...daiCoverTemplate, asset: dai.address };
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    await expectRevert(
+      distributor.buyCover(
+        cover.contractAddress,
+        cover.asset,
+        cover.amount,
+        cover.period,
+        cover.type,
+        data, {
+          from: coverHolder,
+          value: priceWithFee.subn(1),
+        }),
+      'ERC20: transfer amount exceeds balance'
+    );
+  });
+
+  it.only('reverts if payment token approval in insufficient', async function () {
+    const { distributor, cover: coverContract, dai } = this.contracts;
+
+    const cover = { ...daiCoverTemplate, asset: dai.address };
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    await dai.mint(coverHolder, ether('100000'), {
+      from: coverHolder,
+    });
+    await dai.approve(distributor.address, priceWithFee.subn(1), {
+      from: coverHolder
+    });
+
+    await expectRevert(
+      distributor.buyCover(
+        cover.contractAddress,
+        cover.asset,
+        cover.amount,
+        cover.period,
+        cover.type,
+        data, {
+          from: coverHolder
+        }),
+      'VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance'
+    );
   });
 
   it('successfully buys ETH cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
@@ -122,6 +210,39 @@ describe('buyCover', function () {
 
     const withdrawableEther = await distributor.withdrawableTokens(ETH);
     assert.equal(withdrawableEther.toString(), expectedFee.toString());
+  });
+
+  it('charges cover price based on updated distributor fee', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    const newFeePercentage = '20000';
+    const storedFeePercentage = await distributor.setFeePercentage(newFeePercentage);
+
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(parseInt(newFeePercentage)).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    const buyCoverTx = await distributor.buyCover(
+      cover.contractAddress,
+      cover.asset,
+      cover.amount,
+      cover.period,
+      cover.type,
+      data, {
+        from: coverHolder,
+        value: priceWithFee,
+      });
+    const expectedCoverId = 1;
+
+    expectEvent(buyCoverTx, 'CoverBought', {
+      coverId: expectedCoverId.toString(),
+      buyer: coverHolder,
+      contractAddress: cover.contractAddress,
+      feePercentage: newFeePercentage.toString(),
+    });
   });
 
   it('successfully buys DAI cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {

@@ -255,7 +255,7 @@ describe('Distributor', function () {
     );
   });
 
-  it('allows claim reedeem for accepted ETH cover', async function () {
+  it('allows claim reedeem for accepted ETH cover and reverts on double-redeem', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
     const cover = {
@@ -300,9 +300,17 @@ describe('Distributor', function () {
     const coverHolderEthBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
     const redeemedAmount = coverHolderEthBalanceAfter.sub(coverHolderEthBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
+
+    // cannot be redeemed twice
+    await expectRevert(
+      distributor.submitClaim(expectedCoverId, emptyData, {
+        from: coverHolder,
+      }),
+      'VM Exception while processing transaction: revert ERC721: operator query for nonexistent token',
+    );
   });
 
-  it('allows claim reedeem for accepted DAI cover', async function () {
+  it.only('allows claim reedeem for accepted DAI cover and reverts on double-redeem', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
 
     const cover = {
@@ -352,6 +360,14 @@ describe('Distributor', function () {
     const coverHolderDAIBalanceAfter = await dai.balanceOf(coverHolder);
     const redeemedAmount = coverHolderDAIBalanceAfter.sub(coverHolderDAIBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
+
+    // cannot be redeemed twice
+    await expectRevert(
+      distributor.submitClaim(expectedCoverId, emptyData, {
+        from: coverHolder,
+      }),
+      'VM Exception while processing transaction: revert ERC721: operator query for nonexistent token',
+    );
   });
 
   it('allows distributor owner to withdraw ETH fees from bought covers', async function () {
