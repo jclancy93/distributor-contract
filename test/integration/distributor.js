@@ -20,6 +20,31 @@ const DEFAULT_FEE_PERCENTAGE = 500; // 5%
 
 const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
+const ethCoverTemplate = {
+  amount: ether('10'),
+  price: '3362445813369838',
+  priceNXM: '744892736679184',
+  expireTime: '7972408607',
+  generationTime: '7972408607001',
+  asset: ETH,
+  currency: hex('ETH'),
+  period: 120,
+  type: 0,
+  contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+};
+
+const daiCoverTemplate = {
+  amount: ether('10000'),
+  price: '3362445813369838',
+  priceNXM: '744892736679184',
+  expireTime: '7972408607',
+  generationTime: '7972408607001',
+  currency: hex('DAI'),
+  period: 120,
+  type: 0,
+  contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
+};
+
 async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
 
   const basePrice = new BN(cover.price);
@@ -116,18 +141,7 @@ describe('Distributor', function () {
   it('sells ETH cover to coverHolder successfully', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
 
-    const cover = {
-      amount: ether('10'),
-      price: '3362445813369838',
-      priceNXM: '744892736679184',
-      expireTime: '7972408607',
-      generationTime: '7972408607001',
-      asset: ETH,
-      currency: hex('ETH'),
-      period: 120,
-      type: 0,
-      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
-    };
+    const cover = { ...ethCoverTemplate };
 
     const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt });
     const expectedCoverId = 1;
@@ -151,18 +165,7 @@ describe('Distributor', function () {
   it('sells DAI cover to coverHolder successfully', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
 
-    const cover = {
-      amount: ether('10000'),
-      price: '3362445813369838',
-      priceNXM: '744892736679184',
-      expireTime: '7972408607',
-      generationTime: '7972408607001',
-      asset: dai.address,
-      currency: hex('DAI'),
-      period: 120,
-      type: 0,
-      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
-    };
+    const cover = { ...daiCoverTemplate, asset: dai.address };
 
     const buyerDAIFunds = ether('20000');
     await dai.mint(coverHolder, buyerDAIFunds, {
@@ -219,19 +222,7 @@ describe('Distributor', function () {
   it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
 
-    const cover = {
-      amount: ether('10'),
-      price: '3362445813369838',
-      priceNXM: '744892736679184',
-      expireTime: '7972408607',
-      generationTime: '7972408607001',
-      asset: ETH,
-      currency: hex('ETH'),
-      period: 120,
-      type: 0,
-      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
-    };
-
+    const cover = { ...ethCoverTemplate };
     await buyCover({ cover, coverHolder, distributor, qt });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
@@ -255,21 +246,10 @@ describe('Distributor', function () {
     );
   });
 
-  it('allows claim reedeem for accepted ETH cover and reverts on double-redeem', async function () {
+  it('allows claim reedeem for accepted ETH cover', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
-    const cover = {
-      amount: ether('10'),
-      price: '3362445813369838',
-      priceNXM: '744892736679184',
-      expireTime: '7972408607',
-      generationTime: '7972408607001',
-      asset: ETH,
-      currency: hex('ETH'),
-      period: 120,
-      type: 0,
-      contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
-    };
+    const cover = { ...ethCoverTemplate };
 
     await buyCover({ cover, coverHolder, distributor, qt });
     const expectedCoverId = 1;
@@ -300,17 +280,38 @@ describe('Distributor', function () {
     const coverHolderEthBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
     const redeemedAmount = coverHolderEthBalanceAfter.sub(coverHolderEthBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
+  });
+
+  it('reverts on double-redeem', async function () {
+    const {p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token} = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    await buyCover({ cover, coverHolder, distributor, qt });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder,
+    });
+    await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
+
+    const { completed: payoutCompleted } = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    assert(payoutCompleted);
+    await distributor.redeemClaim(expectedClaimId, {
+      from: coverHolder,
+      gasPrice: 0,
+    });
 
     // cannot be redeemed twice
     await expectRevert(
-      distributor.submitClaim(expectedCoverId, emptyData, {
+      distributor.redeemClaim(expectedCoverId, {
         from: coverHolder,
       }),
       'VM Exception while processing transaction: revert ERC721: operator query for nonexistent token',
     );
   });
 
-  it.only('allows claim reedeem for accepted DAI cover and reverts on double-redeem', async function () {
+  it('allows claim reedeem for accepted DAI cover', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
 
     const cover = {
@@ -360,14 +361,6 @@ describe('Distributor', function () {
     const coverHolderDAIBalanceAfter = await dai.balanceOf(coverHolder);
     const redeemedAmount = coverHolderDAIBalanceAfter.sub(coverHolderDAIBalanceBefore);
     assert.equal(redeemedAmount.toString(), cover.amount);
-
-    // cannot be redeemed twice
-    await expectRevert(
-      distributor.submitClaim(expectedCoverId, emptyData, {
-        from: coverHolder,
-      }),
-      'VM Exception while processing transaction: revert ERC721: operator query for nonexistent token',
-    );
   });
 
   it('allows distributor owner to withdraw ETH fees from bought covers', async function () {
