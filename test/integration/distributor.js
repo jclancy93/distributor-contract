@@ -283,7 +283,7 @@ describe('Distributor', function () {
   });
 
   it('reverts on double-redeem', async function () {
-    const {p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token} = this.contracts;
+    const {p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     await buyCover({ cover, coverHolder, distributor, qt });
@@ -445,6 +445,25 @@ describe('Distributor', function () {
     });
     const daiBalanceAfter = await dai.balanceOf(bank);
     assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
+  });
+
+  it.only('rejects a claim after cover expiration', async function () {
+    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    await buyCover({ cover, coverHolder, distributor, qt });
+    const expectedCoverId = 1;
+    await time.increase((cover.period + 1) * 24 * 3600);
+    
+    await qt.expireCover(expectedCoverId);
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+    await expectRevert(
+      distributor.submitClaim(expectedCoverId, emptyData, {
+        from: coverHolder,
+      }),
+      'Claims: Cover already expired'
+    );
   });
 
   it('allows transferring out NXM through the use of .approve', async function () {
