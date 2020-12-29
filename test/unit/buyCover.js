@@ -142,7 +142,7 @@ describe('buyCover', function () {
     );
   });
 
-  it.only('reverts if payment token approval in insufficient', async function () {
+  it('reverts if payment token approval in insufficient', async function () {
     const { distributor, cover: coverContract, dai } = this.contracts;
 
     const cover = { ...daiCoverTemplate, asset: dai.address };
@@ -243,6 +243,36 @@ describe('buyCover', function () {
       contractAddress: cover.contractAddress,
       feePercentage: newFeePercentage.toString(),
     });
+  });
+
+  it('refunds extra ETH that exceeds price + fee', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    const newFeePercentage = '20000';
+    const storedFeePercentage = await distributor.setFeePercentage(newFeePercentage);
+
+    const basePrice = toBN(cover.price);
+    const expectedFee = basePrice.muln(parseInt(newFeePercentage)).divn(10000);
+    const priceWithFee = expectedFee.add(basePrice);
+
+    const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    const extraEth = ether('5');
+    const ethBalanceBefore = toBN(await web3.eth.getBalance(coverHolder));
+    await distributor.buyCover(
+      cover.contractAddress,
+      cover.asset,
+      cover.amount,
+      cover.period,
+      cover.type,
+      data, {
+        from: coverHolder,
+        value: priceWithFee.add(extraEth),
+        gasPrice: 0
+      });
+    const ethBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
+    assert(ethBalanceBefore.sub(ethBalanceAfter).toString(), priceWithFee.toString());
   });
 
   it('successfully buys DAI cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
