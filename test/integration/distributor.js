@@ -447,14 +447,29 @@ describe('Distributor', function () {
     assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
   });
 
-  it.only('rejects a claim after cover expiration', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
+  it('contains NXM deposit after cover expiry', async function () {
+    const { distributor, qt, tk: token } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     await buyCover({ cover, coverHolder, distributor, qt });
     const expectedCoverId = 1;
     await time.increase((cover.period + 1) * 24 * 3600);
-    
+
+    const nxmBalanceBeforeExpiry = await token.balanceOf(distributor.address);
+    await qt.expireCover(expectedCoverId);
+    const nxmBalanceAfterExpiry = await token.balanceOf(distributor.address);
+    const returnedNXM = nxmBalanceAfterExpiry.sub(nxmBalanceBeforeExpiry);
+    assert.equal(returnedNXM.toString(), toBN(cover.priceNXM).divn(10).toString());
+  });
+
+  it('rejects a claim after cover expiration', async function () {
+    const { distributor, qt } = this.contracts;
+
+    const cover = { ...ethCoverTemplate };
+    await buyCover({ cover, coverHolder, distributor, qt });
+    const expectedCoverId = 1;
+    await time.increase((cover.period + 1) * 24 * 3600);
+
     await qt.expireCover(expectedCoverId);
 
     const emptyData = web3.eth.abi.encodeParameters([], []);
