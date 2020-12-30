@@ -2,7 +2,7 @@ const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
 const Decimal = require('decimal.js');
-const { getSignedQuote } = require('./external').getQuote;
+const { getQuoteSignature } = require('./external').getQuote;
 const { coverToCoverDetailsArray } = require('./external');
 const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
@@ -50,7 +50,7 @@ async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
   const basePrice = new BN(cover.price);
   // encoded data and signature uses unit price.
   const unitAmount = toBN(cover.amount).div(ether('1')).toString();
-  const [v, r, s] = await getSignedQuote(
+  const [v, r, s] = await getQuoteSignature(
     coverToCoverDetailsArray({ ...cover, amount: unitAmount }),
     cover.currency,
     cover.period,
