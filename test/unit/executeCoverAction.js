@@ -5,7 +5,7 @@ const { toBN } = web3.utils;
 const { hex, ETH, ZERO_ADDRESS, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
 const BN = web3.utils.BN;
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
+const [, coverHolder] = accounts;
 
 describe('executeCoverAction', function () {
 
