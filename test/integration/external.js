@@ -3,11 +3,8 @@ const { ether } = require('@openzeppelin/test-helpers');
 const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const setup = require('../../nexusmutual-contracts/test/integration/setup');
-const getQuote = require('../../nexusmutual-contracts/test/integration/utils/getQuote');
 
-function coverToCoverDetailsArray (cover) {
-  return [cover.amount, cover.price, cover.priceNXM, cover.expireTime, cover.generationTime];
-}
+const { getBuyCoverDataParameter } = require('../../nexusmutual-contracts/test/integration/Cover/utils');
 
 async function enrollMember ({ mr, tk, tc }, members, options = {}) {
 
@@ -41,6 +38,5 @@ const enroll = {
 module.exports = {
   setup,
   enroll,
-  getQuote,
-  coverToCoverDetailsArray,
+  getBuyCoverDataParameter
 };

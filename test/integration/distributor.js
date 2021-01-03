@@ -1,9 +1,7 @@
 const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
-const Decimal = require('decimal.js');
-const { getQuoteSignature } = require('./external').getQuote;
-const { coverToCoverDetailsArray } = require('./external');
+const { getBuyCoverDataParameter } = require('./external');
 const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const BN = web3.utils.BN;
@@ -45,52 +43,40 @@ const daiCoverTemplate = {
   contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
 };
 
-async function buyCover ({ cover, coverHolder, distributor, qt, assetToken }) {
+async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
 
-  const basePrice = new BN(cover.price);
-  // encoded data and signature uses unit price.
-  const unitAmount = toBN(cover.amount).div(ether('1')).toString();
-  const [v, r, s] = await getQuoteSignature(
-    coverToCoverDetailsArray({ ...cover, amount: unitAmount }),
-    cover.currency,
-    cover.period,
-    cover.contractAddress,
-    qt.address,
-  );
-  const data = web3.eth.abi.encodeParameters(
-    ['uint', 'uint', 'uint', 'uint', 'uint8', 'bytes32', 'bytes32'],
-    [basePrice, cover.priceNXM, cover.expireTime, cover.generationTime, v, r, s],
-  );
+  const basePrice = new BN(coverData.price);
+
+  const data = await getBuyCoverDataParameter({ qt, coverData });
   const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
 
-  let tx;
-  if (cover.asset === ETH) {
-    tx = await distributor.buyCover(
-      cover.contractAddress,
-      cover.asset,
-      cover.amount,
-      cover.period,
-      cover.type,
+  if (coverData.asset === ETH) {
+    return await distributor.buyCover(
+      coverData.contractAddress,
+      coverData.asset,
+      coverData.amount,
+      coverData.period,
+      coverData.type,
       data, {
         from: coverHolder,
         value: priceWithFee,
       });
-  } else {
-    await assetToken.approve(distributor.address, priceWithFee, {
+  } else if(coverData.asset === dai.address) {
+    await dai.approve(distributor.address, priceWithFee, {
       from: coverHolder,
     });
-    tx = await distributor.buyCover(
-      cover.contractAddress,
-      cover.asset,
-      cover.amount,
-      cover.period,
-      cover.type,
+    return distributor.buyCover(
+      coverData.contractAddress,
+      coverData.asset,
+      coverData.amount,
+      coverData.period,
+      coverData.type,
       data, {
         from: coverHolder,
       });
   }
 
-  return tx;
+  throw new Error(`Unknown asset: ${coverData.asset}`);
 }
 
 async function voteOnClaim ({ claimId, verdict, cl, cd, master, voter }) {
@@ -139,63 +125,63 @@ describe('Distributor', function () {
   });
 
   it('sells ETH cover to coverHolder successfully', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+    const { distributor, cover: coverContract, qd, qt } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
+    const coverData = { ...ethCoverTemplate };
 
-    const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt });
+    const buyCoverTx = await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
 
     expectEvent(buyCoverTx, 'CoverBought', {
       coverId: expectedCoverId.toString(),
       buyer: coverHolder,
-      contractAddress: cover.contractAddress,
+      contractAddress: coverData.contractAddress,
       feePercentage: DEFAULT_FEE_PERCENTAGE.toString(),
     });
 
     const createdCover = await distributor.getCover(expectedCoverId);
-    assert.equal(createdCover.sumAssured.toString(), cover.amount.toString());
-    assert.equal(createdCover.coverPeriod.toString(), cover.period);
-    assert.equal(createdCover.contractAddress, cover.contractAddress);
-    assert.equal(createdCover.coverAsset, cover.asset);
-    assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
+    assert.equal(createdCover.sumAssured.toString(), coverData.amount.toString());
+    assert.equal(createdCover.coverPeriod.toString(), coverData.period);
+    assert.equal(createdCover.contractAddress, coverData.contractAddress);
+    assert.equal(createdCover.coverAsset, coverData.asset);
+    assert.equal(createdCover.premiumInNXM.toString(), coverData.priceNXM);
     // assert.equal(createdCover.validUntil.toString(), cover.expireTime);
   });
 
   it('sells DAI cover to coverHolder successfully', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+    const { distributor, cover: coverContract, qt, dai } = this.contracts;
 
-    const cover = { ...daiCoverTemplate, asset: dai.address };
+    const coverData = { ...daiCoverTemplate, asset: dai.address };
 
     const buyerDAIFunds = ether('20000');
     await dai.mint(coverHolder, buyerDAIFunds, {
       from: coverHolder,
     });
 
-    const buyCoverTx = await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
+    const buyCoverTx = await buyCover({ ...this.contracts, coverData, coverHolder });
 
     const expectedCoverId = 1;
     expectEvent(buyCoverTx, 'CoverBought', {
       coverId: expectedCoverId.toString(),
       buyer: coverHolder,
-      contractAddress: cover.contractAddress,
+      contractAddress: coverData.contractAddress,
       feePercentage: DEFAULT_FEE_PERCENTAGE.toString(),
     });
 
     const createdCover = await coverContract.getCover(expectedCoverId);
-    assert.equal(createdCover.sumAssured.toString(), cover.amount.toString());
-    assert.equal(createdCover.coverPeriod.toString(), cover.period);
-    assert.equal(createdCover.contractAddress, cover.contractAddress);
-    assert.equal(createdCover.coverAsset, cover.asset);
-    assert.equal(createdCover.premiumInNXM.toString(), cover.priceNXM);
+    assert.equal(createdCover.sumAssured.toString(), coverData.amount.toString());
+    assert.equal(createdCover.coverPeriod.toString(), coverData.period);
+    assert.equal(createdCover.contractAddress, coverData.contractAddress);
+    assert.equal(createdCover.coverAsset, coverData.asset);
+    assert.equal(createdCover.premiumInNXM.toString(), coverData.priceNXM);
   });
 
   it('reverts when cover asset is not supported', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+    const {  distributor, qt, dai } = this.contracts;
 
     const unsupportedToken = await ERC20DetailedMock.new();
 
-    const cover = {
+    const coverData = {
       amount: ether('10000'),
       price: '3362445813369838',
       priceNXM: '744892736679184',
@@ -213,17 +199,33 @@ describe('Distributor', function () {
       from: coverHolder,
     });
 
+    const basePrice = new BN(coverData.price);
+
+    const data = await getBuyCoverDataParameter({ qt, coverData });
+    const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
+
+    await unsupportedToken.approve(distributor.address, priceWithFee, {
+      from: coverHolder,
+    });
     await expectRevert(
-      buyCover({ cover, coverHolder, distributor, qt, assetToken: unsupportedToken }),
-      'Cover: unknown asset'
+      distributor.buyCover(
+        coverData.contractAddress,
+        coverData.asset,
+        coverData.amount,
+        coverData.period,
+        coverData.type,
+        data, {
+          from: coverHolder,
+        }),
+    'Cover: unknown asset'
     );
   });
 
-  it('allows claim submission for ETH cover and rejects resubmission while unresolved', async function () {
+  it('allows claim submission for ETH cover and rejects resubmission while in-progress', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
-    await buyCover({ cover, coverHolder, distributor, qt });
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
 
@@ -249,9 +251,8 @@ describe('Distributor', function () {
   it('allows claim reedeem for accepted ETH cover', async function () {
     const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
-
-    await buyCover({ cover, coverHolder, distributor, qt });
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
 
@@ -270,7 +271,7 @@ describe('Distributor', function () {
     const distributorEthBalanceAfterPayout = toBN(await web3.eth.getBalance(distributor.address));
 
     const payoutAmount = distributorEthBalanceAfterPayout.sub(distributorEthBalanceBeforePayout);
-    assert.equal(payoutAmount.toString(), cover.amount);
+    assert.equal(payoutAmount.toString(), coverData.amount);
 
     const coverHolderEthBalanceBefore = toBN(await web3.eth.getBalance(coverHolder));
     await distributor.redeemClaim(expectedClaimId, {
@@ -279,14 +280,14 @@ describe('Distributor', function () {
     });
     const coverHolderEthBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
     const redeemedAmount = coverHolderEthBalanceAfter.sub(coverHolderEthBalanceBefore);
-    assert.equal(redeemedAmount.toString(), cover.amount);
+    assert.equal(redeemedAmount.toString(), coverData.amount);
   });
 
   it('reverts on double-redeem', async function () {
     const {p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
-    await buyCover({ cover, coverHolder, distributor, qt });
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
     const emptyData = web3.eth.abi.encodeParameters([], []);
@@ -312,9 +313,9 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted DAI cover', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+    const { distributor, cover: coverContract, qt, dai } = this.contracts;
 
-    const cover = {
+    const coverData = {
       amount: ether('1000'),
       price: '3362445813369838',
       priceNXM: '744892736679184',
@@ -332,7 +333,7 @@ describe('Distributor', function () {
       from: coverHolder,
     });
 
-    await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
 
@@ -351,7 +352,7 @@ describe('Distributor', function () {
     const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);
 
     const payoutAmount = distributorDAIBalanceAfterPayout.sub(distributorEthBalanceBeforePayout);
-    assert.equal(payoutAmount.toString(), cover.amount);
+    assert.equal(payoutAmount.toString(), coverData.amount);
 
     const coverHolderDAIBalanceBefore = await dai.balanceOf(coverHolder);
     await distributor.redeemClaim(expectedClaimId, {
@@ -360,11 +361,11 @@ describe('Distributor', function () {
     });
     const coverHolderDAIBalanceAfter = await dai.balanceOf(coverHolder);
     const redeemedAmount = coverHolderDAIBalanceAfter.sub(coverHolderDAIBalanceBefore);
-    assert.equal(redeemedAmount.toString(), cover.amount);
+    assert.equal(redeemedAmount.toString(), coverData.amount);
   });
 
   it('allows distributor owner to withdraw ETH fees from bought covers', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+    const { distributor, qt } = this.contracts;
 
     let generationTime = 7972408607001;
 
@@ -383,8 +384,8 @@ describe('Distributor', function () {
 
     const ethCoversCount = 2;
     for (let i = 0; i < ethCoversCount; i++) {
-      const cover = { ...ethCoverTemplate, generationTime: generationTime++ };
-      await buyCover({ cover, coverHolder, distributor, qt });
+      const coverData = { ...ethCoverTemplate, generationTime: generationTime++ };
+      await buyCover({ ...this.contracts, coverData, coverHolder, distributor, qt });
     }
 
     const ethWithdrawAmount = toBN(ethCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(ethCoversCount);
@@ -426,13 +427,13 @@ describe('Distributor', function () {
     for (let i = 0; i < daiCoversCount; i++) {
 
       const price =  toBN(daiCoverTemplate.price).muln(i + 1);
-      const cover = {
+      const coverData = {
         ...daiCoverTemplate,
         generationTime: generationTime++,
         price: price.toString()
       };
       totalPrice = totalPrice.add(price);
-      await buyCover({ cover, coverHolder, distributor, qt, assetToken: dai });
+      await buyCover({ ...this.contracts, coverData, coverHolder });
     }
 
     const daiWithdrawAmount = totalPrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
@@ -450,25 +451,25 @@ describe('Distributor', function () {
   it('contains NXM deposit after cover expiry', async function () {
     const { distributor, qt, tk: token } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
-    await buyCover({ cover, coverHolder, distributor, qt });
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
-    await time.increase((cover.period + 1) * 24 * 3600);
+    await time.increase((coverData.period + 1) * 24 * 3600);
 
     const nxmBalanceBeforeExpiry = await token.balanceOf(distributor.address);
     await qt.expireCover(expectedCoverId);
     const nxmBalanceAfterExpiry = await token.balanceOf(distributor.address);
     const returnedNXM = nxmBalanceAfterExpiry.sub(nxmBalanceBeforeExpiry);
-    assert.equal(returnedNXM.toString(), toBN(cover.priceNXM).divn(10).toString());
+    assert.equal(returnedNXM.toString(), toBN(coverData.priceNXM).divn(10).toString());
   });
 
   it('rejects a claim after cover expiration', async function () {
     const { distributor, qt } = this.contracts;
 
-    const cover = { ...ethCoverTemplate };
-    await buyCover({ cover, coverHolder, distributor, qt });
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
-    await time.increase((cover.period + 1) * 24 * 3600);
+    await time.increase((coverData.period + 1) * 24 * 3600);
 
     await qt.expireCover(expectedCoverId);
 
@@ -532,7 +533,7 @@ describe('Distributor', function () {
   });
 
   it('allows switching membership to another address', async function () {
-    const { distributor, tk: token, master } = this.contracts;
+    const { distributor, master } = this.contracts;
 
     await distributor.switchMembership(newMemberAddress, {
       from: distributorOwner,
