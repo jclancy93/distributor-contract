@@ -1,3 +1,4 @@
+require('dotenv').config();
 require('@nomiclabs/hardhat-web3');
 require('@nomiclabs/hardhat-truffle5');
 
@@ -28,6 +29,28 @@ task('typechain', async (_, { config }) => {
 const forkURL = process.env.TEST_ENV_FORK;
 const forkConfig = forkURL ? { forking: { url: forkURL } } : {};
 
+const networks = {
+  hardhat: {
+    accounts: {
+      count: 100,
+      accountsBalance: ether(10000000),
+    },
+    allowUnlimitedContractSize: true,
+    blockGasLimit: 12e9,
+    ...forkConfig,
+  },
+};
+
+for (const network of ['MAINNET', 'KOVAN']) {
+  const url = process.env[`${network}_PROVIDER_URL`];
+  const accounts = [process.env[`${network}_ACCOUNT_KEY`]];
+  networks[network.toLowerCase()] = { accounts, url };
+}
+
+const compilerSettings = process.env.ENABLE_OPTIMIZER
+  ? { optimizer: { enabled: true, runs: 200 } }
+  : {};
+
 module.exports = {
 
   mocha: {
@@ -36,24 +59,15 @@ module.exports = {
     recursive: false,
   },
 
-  networks: {
-    hardhat: {
-      accounts: {
-        count: 100,
-        accountsBalance: ether(10000000),
-      },
-      allowUnlimitedContractSize: true,
-      blockGasLimit: 12e9,
-      ...forkConfig,
-    },
-  },
+  networks,
 
   solidity: {
     compilers: [
       { version: '0.7.4' }, // distributor
       { version: '0.5.17' }, // nexus mutual
+      { version: '0.5.7' }, // nexus mutual governance
       { version: '0.5.16' }, // uniswap v2 core
       { version: '0.6.6' }, // uniswap v2 peripherals,
-    ],
+    ].map(compiler => ({ ...compiler, settings: compilerSettings })),
   },
 };
