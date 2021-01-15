@@ -56,12 +56,12 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
 
   mapping (uint => uint) public claimIds;
   uint public feePercentage; // with 2 decimals. eg.: 10.00% stored as 1000
-  bool buysAllowed = true;
+  bool public buysAllowed = true;
 
   mapping(address => uint) public withdrawableTokens;
-  ICover immutable cover;
-  IERC20 immutable nxmToken;
-  INXMaster immutable master;
+  ICover immutable public cover;
+  IERC20 immutable public nxmToken;
+  INXMaster immutable public master;
 
   modifier onlyTokenApprovedOrOwner(uint256 tokenId) {
     require(_isApprovedOrOwner(msg.sender, tokenId), "Distributor: Not approved or owner");
