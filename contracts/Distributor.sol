@@ -234,16 +234,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
   }
 
-  function deprecated_sellNXM(uint nxmIn) external onlyOwner {
-
-    address poolAddress = master.getLatestAddress("P1");
-    nxmToken.approve(poolAddress, nxmIn);
-    uint balanceBefore = address(this).balance;
-    IPool(poolAddress).sellNXMTokens(nxmIn);
-    uint balanceAfter = address(this).balance;
-    withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
-  }
-
   function setBuysAllowed(bool _buysAllowed) external onlyOwner {
     buysAllowed = _buysAllowed;
   }
