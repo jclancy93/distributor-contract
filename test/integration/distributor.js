@@ -61,7 +61,7 @@ async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
         from: coverHolder,
         value: priceWithFee,
       });
-  } else if(coverData.asset === dai.address) {
+  } else if (coverData.asset === dai.address) {
     await dai.approve(distributor.address, priceWithFee, {
       from: coverHolder,
     });
@@ -177,7 +177,7 @@ describe('Distributor', function () {
   });
 
   it('reverts when cover asset is not supported', async function () {
-    const {  distributor, qt, dai } = this.contracts;
+    const { distributor, qt, dai } = this.contracts;
 
     const unsupportedToken = await ERC20DetailedMock.new();
 
@@ -217,7 +217,7 @@ describe('Distributor', function () {
         data, {
           from: coverHolder,
         }),
-    'Cover: unknown asset'
+      'Cover: unknown asset',
     );
   });
 
@@ -284,7 +284,7 @@ describe('Distributor', function () {
   });
 
   it('reverts on double-redeem', async function () {
-    const {p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
+    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -426,11 +426,11 @@ describe('Distributor', function () {
     let totalPrice = toBN('0');
     for (let i = 0; i < daiCoversCount; i++) {
 
-      const price =  toBN(daiCoverTemplate.price).muln(i + 1);
+      const price = toBN(daiCoverTemplate.price).muln(i + 1);
       const coverData = {
         ...daiCoverTemplate,
         generationTime: generationTime++,
-        price: price.toString()
+        price: price.toString(),
       };
       totalPrice = totalPrice.add(price);
       await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -478,7 +478,7 @@ describe('Distributor', function () {
       distributor.submitClaim(expectedCoverId, emptyData, {
         from: coverHolder,
       }),
-      'Claims: Cover already expired'
+      'Claims: Cover already expired',
     );
   });
 
@@ -524,7 +524,7 @@ describe('Distributor', function () {
     const distributorEthBalanceBefore = toBN(await web3.eth.getBalance(distributor.address));
     await distributor.sellNXM(nxmToBeSold, expectedEth, {
       from: distributorOwner,
-      gasPrice: 0
+      gasPrice: 0,
     });
     const distributorEthBalanceAfter = toBN(await web3.eth.getBalance(distributor.address));
     const distributorBalanceAfter = await token.balanceOf(distributor.address);
@@ -533,17 +533,20 @@ describe('Distributor', function () {
   });
 
   it('allows switching membership to another address', async function () {
-    const { distributor, master } = this.contracts;
+    const { distributor, master, tk } = this.contracts;
 
+    const oldAddressBalance = await tk.balanceOf(distributor.address);
     await distributor.switchMembership(newMemberAddress, {
       from: distributorOwner,
     });
 
     const newAddressIsMember = await master.isMember(newMemberAddress);
     const distributorIsStillMember = await master.isMember(distributor.address);
-
     assert(newAddressIsMember);
     assert(!distributorIsStillMember);
+
+    const newAddressBalance = await tk.balanceOf(newMemberAddress);
+    assert.equal(newAddressBalance.toString(), oldAddressBalance.toString());
   });
 
   it('allows setting the fee percentage by owner', async function () {

@@ -10,7 +10,6 @@ const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, ban
 
 const CoverBuyer = artifacts.require('CoverBuyer');
 
-
 describe('buyCover', function () {
 
   const ethCoverTemplate = {
@@ -85,7 +84,7 @@ describe('buyCover', function () {
           from: coverHolder,
           value: priceWithFee.subn(1),
         }),
-      'Distributor: Insufficient ETH sent'
+      'Distributor: Insufficient ETH sent',
     );
     const expectedCoverId = 1;
   });
@@ -113,7 +112,7 @@ describe('buyCover', function () {
           from: coverHolder,
           value: priceWithFee,
         }),
-      'Distributor: Returning ETH remainder to sender failed.'
+      'Distributor: Returning ETH remainder to sender failed.',
     );
   });
 
@@ -138,7 +137,7 @@ describe('buyCover', function () {
           from: coverHolder,
           value: priceWithFee.subn(1),
         }),
-      'ERC20: transfer amount exceeds balance'
+      'ERC20: transfer amount exceeds balance',
     );
   });
 
@@ -156,7 +155,7 @@ describe('buyCover', function () {
       from: coverHolder,
     });
     await dai.approve(distributor.address, priceWithFee.subn(1), {
-      from: coverHolder
+      from: coverHolder,
     });
 
     await expectRevert(
@@ -167,9 +166,9 @@ describe('buyCover', function () {
         cover.period,
         cover.type,
         data, {
-          from: coverHolder
+          from: coverHolder,
         }),
-      'VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance'
+      'VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance',
     );
   });
 
@@ -269,7 +268,7 @@ describe('buyCover', function () {
       data, {
         from: coverHolder,
         value: priceWithFee.add(extraEth),
-        gasPrice: 0
+        gasPrice: 0,
       });
     const ethBalanceAfter = toBN(await web3.eth.getBalance(coverHolder));
     assert(ethBalanceBefore.sub(ethBalanceAfter).toString(), priceWithFee.toString());
@@ -290,7 +289,7 @@ describe('buyCover', function () {
     });
 
     await dai.approve(distributor.address, priceWithFee, {
-      from: coverHolder
+      from: coverHolder,
     });
 
     const buyCoverTx = await distributor.buyCover(
@@ -300,7 +299,7 @@ describe('buyCover', function () {
       cover.period,
       cover.type,
       data, {
-        from: coverHolder
+        from: coverHolder,
       });
     const expectedCoverId = 1;
 

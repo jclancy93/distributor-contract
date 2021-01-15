@@ -38,5 +38,5 @@ const enroll = {
 module.exports = {
   setup,
   enroll,
-  getBuyCoverDataParameter
+  getBuyCoverDataParameter,
 };
