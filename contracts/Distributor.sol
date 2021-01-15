@@ -85,6 +85,15 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     master = INXMaster(masterAddress);
   }
 
+  /**
+  * @dev buy cover for a coverable identified by its contractAddress
+  * @param contractAddress contract address of coverable
+  * @param coverAsset asset of the premium and of the sum assured.
+  * @param sumAssured amount payable if claim is submitted and considered valid
+  * @param coverType cover type dermining how the data parameter is decoded
+  * @param data abi-encoded field with additional cover data fields
+  * @return token id
+  */
   function buyCover (
     address contractAddress,
     address coverAsset,
@@ -93,9 +102,10 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint8 coverType,
     bytes calldata data
   )
-     external
-     payable
-     nonReentrant
+    external
+    payable
+    nonReentrant
+    returns (uint)
   {
     require(buysAllowed, "Distributor: buys not allowed");
 
@@ -130,8 +140,14 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     _mint(msg.sender, coverId);
 
     emit CoverBought(coverId, msg.sender, contractAddress, feePercentage, coverPrice);
+    return coverId;
   }
 
+  /**
+  * @notice Submit a claim for the cover
+  * @param tokenId cover token id
+  * @param data abi-encoded field with additional claim data fields
+  */
   function submitClaim(
     uint tokenId,
     bytes calldata data
@@ -145,6 +161,10 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
 
+  /**
+  * @notice Redeem the claim to the cover. Requires that that the payout is completed.
+  * @param tokenId cover token id
+  */
   function redeemClaim(
     uint256 tokenId
   )
@@ -168,6 +188,18 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     emit ClaimPayoutRedeemed(tokenId, claimId, msg.sender, amountPaid, coverAsset);
   }
 
+  /**
+  * @notice Execute an action on specific cover token. The action is identified by an `action` id.
+      Allows for an ETH transfer or an ERC20 transfer.
+      If less than the supplied assetAmount is needed, it is returned to `msg.sender`.
+  * @dev The purpose of this function is future-proofing for updates to the cover buy->claim cycle.
+  * @param tokenId id of the cover token
+  * @param assetAmount optional asset amount to be transferred along with the action executed
+  * @param asset optional asset to be transferred along with the action executed
+  * @param action action identifier
+  * @param data abi-encoded field with action parameters
+  * @return response (abi-encoded response, amount withheld from the original asset amount supplied)
+  */
   function executeCoverAction(uint tokenId, uint assetAmount, address asset, uint8 action, bytes calldata data)
     external
     payable
@@ -195,6 +227,10 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     return cover.executeCoverAction(tokenId, action, data);
   }
 
+  /**
+  * @notice get cover data
+  * @param tokenId cover token id
+  */
   function getCover(uint tokenId)
   public
   view
@@ -211,19 +247,38 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     return cover.getCover(tokenId);
   }
 
-  function approveNXM(address spender, uint256 value) public onlyOwner {
-    nxmToken.approve(spender, value);
+  /**
+  * @notice Set `amount` as the allowance of `spender` over the distributor's NXM tokens.
+  * @param spender approved spender
+  * @param amount amount approved
+  */
+  function approveNXM(address spender, uint256 amount) public onlyOwner {
+    nxmToken.approve(spender, amount);
   }
 
-  function withdrawNXM(address receiver, uint256 value) public onlyOwner {
-    nxmToken.safeTransfer(receiver, value);
+  /**
+  * @notice Moves `amount` tokens from the distributor to `recipient`.
+  * @param recipient recipient of NXM
+  * @param amount amount of NXM
+  */
+  function withdrawNXM(address recipient, uint256 amount) public onlyOwner {
+    nxmToken.safeTransfer(recipient, amount);
   }
 
+  /**
+  * @notice Switch NexusMutual membership to `newAddress`.
+  * @param newAddress address
+  */
   function switchMembership(address newAddress) external onlyOwner {
     nxmToken.approve(address(cover), uint(-1));
     cover.switchMembership(newAddress);
   }
 
+  /**
+  * @notice Sell Distributor-owned NXM tokens for ETH
+  * @param nxmIn Amount of NXM to sell
+  * @param minEthOut minimum expected Eth received
+  */
   function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner {
 
     address poolAddress = master.getLatestAddress("P1");
@@ -234,10 +289,19 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
   }
 
+  /**
+  * @notice Set if buyCover calls are allowed (true) or not (false).
+  * @param _buysAllowed value set for buysAllowed
+  */
   function setBuysAllowed(bool _buysAllowed) external onlyOwner {
     buysAllowed = _buysAllowed;
   }
 
+  /**
+  * @notice Send distributor-owned `amount` of ETH to `recipient`.
+  * @param recipient receiver of ETH
+  * @param amount amount to send
+  */
   function withdrawEther(address payable recipient, uint256 amount)
     external
     onlyOwner
@@ -248,6 +312,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     recipient.transfer(amount);
   }
 
+  /**
+  * @notice Send distributor-owned `amount` of `asset` to `recipient`.
+  * @param recipient receiver of `asset`
+  * @param amount amount to send
+  */
   function withdrawTokens(address payable recipient, uint256 amount, address asset)
     external
     onlyOwner
@@ -260,10 +329,18 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     require(erc20.transfer(recipient, amount), "Distributor: Transfer failed");
   }
 
+  /**
+  * @notice Set fee percentage for buyCover premiums.
+  *  `_feePercentage` has 2 decimals of precision ( 5000 is 50%)
+  * @param _feePercentage fee percentage to be set
+  */
   function setFeePercentage(uint _feePercentage) external onlyOwner {
     feePercentage = _feePercentage;
   }
 
+  /**
+  * @dev required to be allow for receiving ETH claim payouts
+  */
   receive () payable external {
   }
 }
