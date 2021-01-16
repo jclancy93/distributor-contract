@@ -1,9 +1,12 @@
+const { accounts, artifacts } = require('hardhat');
 const { hex, ZERO_ADDRESS, ETH, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
 
 const ERC20Mock = artifacts.require('ERC20Mock');
 const ERC20DetailedMock = artifacts.require('ERC20DetailedMock');
 const CoverMock = artifacts.require('CoverMock');
 const Distributor = artifacts.require('Distributor');
+
+const [, treasury] = accounts;
 
 async function setup () {
 
@@ -16,6 +19,7 @@ async function setup () {
     nxmToken.address,
     ZERO_ADDRESS,
     DEFAULT_FEE_PERCENTAGE,
+    treasury,
     'UnitTestToken',
     'UTT',
   );

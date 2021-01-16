@@ -1,14 +1,12 @@
-const { accounts, web3, artifacts } = require('hardhat');
+const { web3, artifacts, accounts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
 const { toBN } = web3.utils;
-const { hex, ZERO_ADDRESS, ETH, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
-const BN = web3.utils.BN;
-const Distributor = artifacts.require('Distributor');
-
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank] = accounts;
+const { hex, ETH, DEFAULT_FEE_PERCENTAGE } = require('../utils').helpers;
 
 const CoverBuyer = artifacts.require('CoverBuyer');
+
+const [, treasury, coverHolder] = accounts;
 
 describe('buyCover', function () {
 
@@ -38,7 +36,7 @@ describe('buyCover', function () {
   };
 
   it('reverts if allowBuys = false', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     const basePrice = toBN(cover.price);
@@ -47,8 +45,7 @@ describe('buyCover', function () {
     const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
 
     await distributor.setBuysAllowed(false);
-
-    expectRevert(
+    await expectRevert(
       distributor.buyCover(
         cover.contractAddress,
         cover.asset,
@@ -64,7 +61,7 @@ describe('buyCover', function () {
   });
 
   it('reverts if insufficient ETH sent', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     const basePrice = toBN(cover.price);
@@ -90,7 +87,7 @@ describe('buyCover', function () {
   });
 
   it('reverts if cover buyer is a contract that rejects eth payments', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     const basePrice = toBN(cover.price);
@@ -117,7 +114,7 @@ describe('buyCover', function () {
   });
 
   it('reverts if payment token approval in insufficient', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+    const { distributor, dai } = this.contracts;
 
     const cover = { ...daiCoverTemplate, asset: dai.address };
     const basePrice = toBN(cover.price);
@@ -142,7 +139,7 @@ describe('buyCover', function () {
   });
 
   it('reverts if payment token approval in insufficient', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+    const { distributor, dai } = this.contracts;
 
     const cover = { ...daiCoverTemplate, asset: dai.address };
     const basePrice = toBN(cover.price);
@@ -172,8 +169,8 @@ describe('buyCover', function () {
     );
   });
 
-  it('successfully buys ETH cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+  it('successfully buys ETH cover, mints cover token, sends fee to treasury and emits event', async function () {
+    const { distributor } = this.contracts;
 
     const cover = { ...ethCoverTemplate };
     const basePrice = toBN(cover.price);
@@ -181,6 +178,8 @@ describe('buyCover', function () {
     const priceWithFee = expectedFee.add(basePrice);
 
     const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
+
+    const treasuryEthBalanceBefore = toBN(await web3.eth.getBalance(treasury));
 
     const buyCoverTx = await distributor.buyCover(
       cover.contractAddress,
@@ -207,8 +206,8 @@ describe('buyCover', function () {
     const tokenOwner = await distributor.ownerOf(expectedCoverId);
     assert.equal(tokenOwner, coverHolder);
 
-    const withdrawableEther = await distributor.withdrawableTokens(ETH);
-    assert.equal(withdrawableEther.toString(), expectedFee.toString());
+    const treasuryEthBalanceAfter = toBN(await web3.eth.getBalance(treasury));
+    assert.equal(treasuryEthBalanceAfter.sub(treasuryEthBalanceBefore).toString(), expectedFee.toString());
   });
 
   it('charges cover price based on updated distributor fee', async function () {
@@ -216,7 +215,7 @@ describe('buyCover', function () {
 
     const cover = { ...ethCoverTemplate };
     const newFeePercentage = '20000';
-    const storedFeePercentage = await distributor.setFeePercentage(newFeePercentage);
+    await distributor.setFeePercentage(newFeePercentage);
 
     const basePrice = toBN(cover.price);
     const expectedFee = basePrice.muln(parseInt(newFeePercentage)).divn(10000);
@@ -249,7 +248,7 @@ describe('buyCover', function () {
 
     const cover = { ...ethCoverTemplate };
     const newFeePercentage = '20000';
-    const storedFeePercentage = await distributor.setFeePercentage(newFeePercentage);
+    await distributor.setFeePercentage(newFeePercentage);
 
     const basePrice = toBN(cover.price);
     const expectedFee = basePrice.muln(parseInt(newFeePercentage)).divn(10000);
@@ -274,8 +273,8 @@ describe('buyCover', function () {
     assert(ethBalanceBefore.sub(ethBalanceAfter).toString(), priceWithFee.toString());
   });
 
-  it('successfully buys DAI cover, mints cover token, increases available withdrawable fee amount and emits event', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+  it('successfully buys DAI cover, mints cover token, sends fees to treasury and emits event', async function () {
+    const { distributor, dai } = this.contracts;
 
     const cover = { ...daiCoverTemplate, asset: dai.address };
     const basePrice = toBN(cover.price);
@@ -316,7 +315,7 @@ describe('buyCover', function () {
     const tokenOwner = await distributor.ownerOf(expectedCoverId);
     assert.equal(tokenOwner, coverHolder);
 
-    const withdrawableDai = await distributor.withdrawableTokens(dai.address);
-    assert.equal(withdrawableDai.toString(), expectedFee.toString());
+    const treasuryDaiBalance = await dai.balanceOf(treasury);
+    assert.equal(treasuryDaiBalance.toString(), expectedFee.toString());
   });
 });

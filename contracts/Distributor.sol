@@ -61,8 +61,14 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   */
   uint public feePercentage;
   bool public buysAllowed = true;
+  /*
+    address where `buyCover` distributor fees and `ethOut` from `sellNXM` are sent. Controlled by Owner.
+  */
+  address payable public treasury;
 
-  mapping(address => uint) public withdrawableTokens;
+  /*
+    NexusMutual contracts
+  */
   ICover immutable public cover;
   IERC20 immutable public nxmToken;
   INXMaster immutable public master;
@@ -77,6 +83,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     address nxmTokenAddress,
     address masterAddress,
     uint _feePercentage,
+    address payable _treasury,
     string memory tokenName,
     string memory tokenSymbol
   )
@@ -84,6 +91,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   public
   {
     feePercentage = _feePercentage;
+    treasury = _treasury;
     cover = ICover(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);
     master = INXMaster(masterAddress);
@@ -138,7 +146,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
       data
     );
 
-    withdrawableTokens[coverAsset] = withdrawableTokens[coverAsset].add(coverPriceWithFee.sub(coverPrice));
+    transferToTreasury(coverPriceWithFee.sub(coverPrice), coverAsset);
 
     // mint token using the coverId as a tokenId (guaranteed unique)
     _mint(msg.sender, coverId);
@@ -290,7 +298,8 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint balanceBefore = address(this).balance;
     IPool(poolAddress).sellNXM(nxmIn, minEthOut);
     uint balanceAfter = address(this).balance;
-    withdrawableTokens[ETH] = withdrawableTokens[ETH].add(balanceAfter.sub(balanceBefore));
+
+    transferToTreasury(balanceAfter.sub(balanceBefore), ETH);
   }
 
   /**
@@ -302,35 +311,26 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   /**
-  * @notice Send distributor-owned `amount` of ETH to `recipient`.
-  * @param recipient receiver of ETH
-  * @param amount amount to send
+  * @notice Set treasury address where `buyCover` distributor fees and `ethOut` from `sellNXM` are sent.
+  * @param _treasury new treasury address
   */
-  function withdrawEther(address payable recipient, uint256 amount)
-    external
-    onlyOwner
-    nonReentrant
-  {
-    require(withdrawableTokens[ETH] >= amount, "Distributor: Not enough ETH");
-    withdrawableTokens[ETH] = withdrawableTokens[ETH].sub(amount);
-    recipient.transfer(amount);
+  function setTreasury(address payable _treasury) external onlyOwner {
+    treasury = _treasury;
   }
 
   /**
-  * @notice Send distributor-owned `amount` of `asset` to `recipient`.
-  * @param recipient receiver of `asset`
-  * @param amount amount to send
+  * @notice Send `amount` of `asset`  to treasury address
+  * @param amount amount of asset
+  * @param asset ERC20 token address or ETH
   */
-  function withdrawTokens(address payable recipient, uint256 amount, address asset)
-    external
-    onlyOwner
-    nonReentrant
-  {
-    require(withdrawableTokens[asset] >= amount, "Distributor: Not enough tokens");
-    withdrawableTokens[asset] = withdrawableTokens[asset].sub(amount);
-
-    IERC20 erc20 = IERC20(asset);
-    require(erc20.transfer(recipient, amount), "Distributor: Transfer failed");
+  function transferToTreasury(uint amount, address asset) internal {
+    if (asset == ETH) {
+      (bool ok, /* data */) = treasury.call{value: amount}("");
+      require(ok, "Distributor: Transfer to treasury failed");
+    } else {
+      IERC20 erc20 = IERC20(asset);
+      erc20.safeTransfer(treasury, amount);
+    }
   }
 
   /**

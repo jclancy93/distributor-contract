@@ -19,6 +19,7 @@ contract DistributorFactory {
 
     function newDistributor(
         uint _feePercentage,
+        address payable treasury,
         string memory tokenName,
         string memory tokenSymbol
     ) public payable returns (address) {
@@ -29,6 +30,7 @@ contract DistributorFactory {
             master.tokenAddress(),
             address(master),
             _feePercentage,
+            treasury,
             tokenName,
             tokenSymbol
         );

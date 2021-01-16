@@ -12,7 +12,7 @@ const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
 const ERC20DetailedMock = artifacts.require('ERC20DetailedMock');
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, bank, newMemberAddress] = accounts;
+const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, treasury, newMemberAddress] = accounts;
 
 const DEFAULT_FEE_PERCENTAGE = 500; // 5%
 
@@ -96,7 +96,7 @@ async function voteOnClaim ({ claimId, verdict, cl, cd, master, voter }) {
 describe('Distributor', function () {
 
   beforeEach(async function () {
-    const { master, td, mr, tk, tc } = this.contracts;
+    const { master, mr, tk, tc } = this.contracts;
     await enrollMember(this.contracts, [member1, member2, member3, coverHolder]);
     await enrollClaimAssessor(this.contracts, [member1, member2, member3]);
 
@@ -105,6 +105,7 @@ describe('Distributor', function () {
     const joiningFee = ether('0.002');
     const tx = await distributorFactory.newDistributor(
       DEFAULT_FEE_PERCENTAGE,
+      treasury,
       'IntegrationTestToken',
       'ITT',
       { from: distributorOwner, value: joiningFee },
@@ -125,7 +126,7 @@ describe('Distributor', function () {
   });
 
   it('sells ETH cover to coverHolder successfully', async function () {
-    const { distributor, cover: coverContract, qd, qt } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
 
@@ -149,7 +150,7 @@ describe('Distributor', function () {
   });
 
   it('sells DAI cover to coverHolder successfully', async function () {
-    const { distributor, cover: coverContract, qt, dai } = this.contracts;
+    const { cover: coverContract, dai } = this.contracts;
 
     const coverData = { ...daiCoverTemplate, asset: dai.address };
 
@@ -177,7 +178,7 @@ describe('Distributor', function () {
   });
 
   it('reverts when cover asset is not supported', async function () {
-    const { distributor, qt, dai } = this.contracts;
+    const { distributor, qt } = this.contracts;
 
     const unsupportedToken = await ERC20DetailedMock.new();
 
@@ -222,7 +223,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim submission for ETH cover and rejects resubmission while in-progress', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -249,7 +250,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted ETH cover', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
+    const { distributor, cover: coverContract } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -259,7 +260,7 @@ describe('Distributor', function () {
     const emptyData = web3.eth.abi.encodeParameters([], []);
 
     const distributorEthBalanceBeforePayout = toBN(await web3.eth.getBalance(distributor.address));
-    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+    await distributor.submitClaim(expectedCoverId, emptyData, {
       from: coverHolder,
     });
 
@@ -284,14 +285,14 @@ describe('Distributor', function () {
   });
 
   it('reverts on double-redeem', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, cd, cl, master, tk: token } = this.contracts;
+    const { distributor, cover: coverContract } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     const expectedClaimId = 1;
     const emptyData = web3.eth.abi.encodeParameters([], []);
-    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+    await distributor.submitClaim(expectedCoverId, emptyData, {
       from: coverHolder,
     });
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
@@ -313,7 +314,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted DAI cover', async function () {
-    const { distributor, cover: coverContract, qt, dai } = this.contracts;
+    const { distributor, cover: coverContract, dai } = this.contracts;
 
     const coverData = {
       amount: ether('1000'),
@@ -340,7 +341,7 @@ describe('Distributor', function () {
     const emptyData = web3.eth.abi.encodeParameters([], []);
 
     const distributorEthBalanceBeforePayout = await dai.balanceOf(distributor.address);
-    const tx = await distributor.submitClaim(expectedCoverId, emptyData, {
+    await distributor.submitClaim(expectedCoverId, emptyData, {
       from: coverHolder,
     });
 
@@ -364,7 +365,7 @@ describe('Distributor', function () {
     assert.equal(redeemedAmount.toString(), coverData.amount);
   });
 
-  it('allows distributor owner to withdraw ETH fees from bought covers', async function () {
+  it('sends ETH fees from bought covers to treasury', async function () {
     const { distributor, qt } = this.contracts;
 
     let generationTime = 7972408607001;
@@ -382,26 +383,20 @@ describe('Distributor', function () {
       contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
     };
 
+    const treasuryEthBalanceBefore = toBN(await web3.eth.getBalance(treasury));
     const ethCoversCount = 2;
     for (let i = 0; i < ethCoversCount; i++) {
       const coverData = { ...ethCoverTemplate, generationTime: generationTime++ };
       await buyCover({ ...this.contracts, coverData, coverHolder, distributor, qt });
     }
 
-    const ethWithdrawAmount = toBN(ethCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(ethCoversCount);
-    const withdrawableEth = await distributor.withdrawableTokens(ETH);
-    assert.equal(withdrawableEth.toString(), ethWithdrawAmount.toString());
-
-    const ethBalanceBefore = toBN(await web3.eth.getBalance(bank));
-    await distributor.withdrawEther(bank, ethWithdrawAmount, {
-      from: distributorOwner,
-    });
-    const ethBalanceAfter = toBN(await web3.eth.getBalance(bank));
-    assert.equal(ethBalanceAfter.sub(ethBalanceBefore).toString(), ethWithdrawAmount);
+    const expectedFeeProfits = toBN(ethCoverTemplate.price).muln(DEFAULT_FEE_PERCENTAGE).divn(10000).muln(ethCoversCount);
+    const treasuryEthBalanceAfter = toBN(await web3.eth.getBalance(treasury));
+    assert.equal(treasuryEthBalanceAfter.sub(treasuryEthBalanceBefore).toString(), expectedFeeProfits.toString());
   });
 
-  it('allows distributor owner to withdraw DAI fees from bought covers', async function () {
-    const { p1: pool, distributor, cover: coverContract, qd, qt, dai } = this.contracts;
+  it('sends DAI fees from bought covers to treasury', async function () {
+    const { dai } = this.contracts;
 
     let generationTime = 7972408607001;
 
@@ -436,16 +431,9 @@ describe('Distributor', function () {
       await buyCover({ ...this.contracts, coverData, coverHolder });
     }
 
-    const daiWithdrawAmount = totalPrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
-    const withdrawableDAI = await distributor.withdrawableTokens(dai.address);
-    assert.equal(withdrawableDAI.toString(), daiWithdrawAmount.toString());
-
-    const daiBalanceBefore = await dai.balanceOf(bank);
-    await distributor.withdrawTokens(bank, daiWithdrawAmount, dai.address, {
-      from: distributorOwner,
-    });
-    const daiBalanceAfter = await dai.balanceOf(bank);
-    assert.equal(daiBalanceAfter.sub(daiBalanceBefore).toString(), daiWithdrawAmount);
+    const expectedFeeProfits = totalPrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000);
+    const treasuryDAI = await dai.balanceOf(treasury);
+    assert.equal(treasuryDAI.toString(), expectedFeeProfits.toString());
   });
 
   it('contains NXM deposit after cover expiry', async function () {
@@ -521,15 +509,18 @@ describe('Distributor', function () {
 
     const expectedEth = await pool.getEthForNXM(nxmToBeSold);
     const distributorBalanceBefore = await token.balanceOf(distributor.address);
-    const distributorEthBalanceBefore = toBN(await web3.eth.getBalance(distributor.address));
+
+    const treasuryEthBalanceBefore = toBN(await web3.eth.getBalance(treasury));
     await distributor.sellNXM(nxmToBeSold, expectedEth, {
       from: distributorOwner,
       gasPrice: 0,
     });
-    const distributorEthBalanceAfter = toBN(await web3.eth.getBalance(distributor.address));
+
     const distributorBalanceAfter = await token.balanceOf(distributor.address);
     assert.equal(distributorBalanceBefore.sub(distributorBalanceAfter).toString(), nxmToBeSold.toString());
-    assert.equal(distributorEthBalanceAfter.sub(distributorEthBalanceBefore).toString(), expectedEth.toString());
+
+    const treasuryEthBalanceAfter = toBN(await web3.eth.getBalance(treasury));
+    assert.equal(treasuryEthBalanceAfter.sub(treasuryEthBalanceBefore).toString(), expectedEth.toString());
   });
 
   it('allows switching membership to another address', async function () {
