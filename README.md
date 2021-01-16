@@ -2,15 +2,17 @@
 ## NexusMutual distributor
 
 Sell NexusMutual cover to users without KYC.
+Earn revenue on each sale through an optional fee and the NXM deposit return!
 
 ### Addresses
 
 #### mainnet
 
-<To be deployed>
+`Work in progress`
 
 #### kovan
 
+TODO: fill in
 
 ### Integration
 
@@ -23,21 +25,25 @@ This contract becomes a NexusMutual member once the KYC for its address is appro
 #### Deployment
 
 ```
+# install all depedencies
 npm i
-# fill in your .env
-# run deploy
+# create a .env with your configuration
+cp .env.sample .env
+# fill in the blanks in .env
 
+# run deploy
+npm run deploy-kovan
 ```
 
 #### KYC
 
 ##### Mainnet
 
-<In progress>
+`Work in progress`
 
 ##### Kovan
 
-Get in touch with us on telegram to KYC your contract.
+Get in touch with us on telegram to KYC your newly deployed contract.
 
 ### Contract functionality
 
