@@ -55,7 +55,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   );
 
   mapping (uint => uint) public claimIds;
-  uint public feePercentage; // with 2 decimals. eg.: 10.00% stored as 1000
+
+  /*
+   feePercentage applied to every cover premium. has 2 decimals. eg.: 10.00% stored as 1000
+  */
+  uint public feePercentage;
   bool public buysAllowed = true;
 
   mapping(address => uint) public withdrawableTokens;
