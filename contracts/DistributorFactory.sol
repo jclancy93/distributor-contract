@@ -10,7 +10,8 @@ contract DistributorFactory {
     event DistributorCreated(
         address contractAddress,
         address owner,
-        uint feePercentage
+        uint feePercentage,
+        address treasury
     );
 
     constructor (address masterAddress) {
@@ -37,7 +38,7 @@ contract DistributorFactory {
         d.transferOwnership(msg.sender);
         memberRoles.payJoiningFee{ value: msg.value}(address(d));
 
-        emit DistributorCreated(address(d), msg.sender, _feePercentage);
+        emit DistributorCreated(address(d), msg.sender, _feePercentage, treasury);
         return address(d);
     }
 }

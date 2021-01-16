@@ -13,6 +13,7 @@
     "dev-unit": "nodemon --ext js,sol -x 'hardhat test test/unit/index.js --show-stack-traces'",
     "test": "hardhat test test/index.js",
     "test-integration": "hardhat test test/integration/index.js",
+    "deploy-kovan": "hardhat run --network kovan deploy/deploy-distributor.js",
     "test-unit": "hardhat test test/unit/index.js",
     "typechain": "hardhat typechain"
   },
@@ -55,6 +56,7 @@
     "hardhat-dependency-compiler": "^1.0.0",
     "mocha": "^7.1.2",
     "nodemon": "^2.0.2",
+    "prompts": "^2.4.0",
     "truffle-flattener": "github:shark0der/truffle-flattener",
     "ts-generator": "^0.1.1",
     "typechain": "^4.0.0",
