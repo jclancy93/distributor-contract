@@ -78,9 +78,7 @@ the NexusMutual quote engine, which is then abi-encoded as part of the `data` pa
 
 Example:
 
-```
-
-```
+https://github.com/NexusMutual/distributor-contract/blob/distributor-contract-v1/examples/example-buy-cover.js
 
 
 #### submitClaim
