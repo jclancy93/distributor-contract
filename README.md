@@ -76,6 +76,12 @@ the NexusMutual quote engine, which is then abi-encoded as part of the `data` pa
     returns (uint)
 ```
 
+Example:
+
+```
+
+```
+
 
 #### submitClaim
 
@@ -175,19 +181,106 @@ function setTreasury(address payable _treasury) external onlyOwner
 
 ### API endpoints
 
+To enable users to `buyCover` a signed price quote is currently necessary.
 
-#### GET /quote
+#### GET v1/quote
 
-* document /GET Quote - explain response and how to use.
-* document https://api.nexusmutual.io/coverables/contracts.json
-* contact us for API key for production
-* provide kovan endpoint for testing (kovan not probably)
-
-#### GET /capacity
-
-(alternatively do get quote without signature)
+Get a signed price quote to use as part 
 
 
+Example mainnet call:
+
+```
+curl -X GET -H "Origin: https://yourcustomorigin.com" 'https://api.nexusmutual.io/v1/quote?coverAmount=1&currency=ETH&period=111&contractAddress=0xC57D000000000000000000000000000000000002'
+```
+
+Example kovan call:
+
+```
+curl -X GET -H "Origin: https://yourcustomorigin.com" 'https://api.staging.nexusmutual.io/v1/quote?coverAmount=1&currency=ETH&period=111&contractAddress=0xC57D000000000000000000000000000000000002'
+```
+
+
+Example response:
+```
+{
+   "currency":"ETH",
+   "period":"111",
+   "amount":"1",
+   "price":"7901437371663244",
+   "priceInNXM":"206328266227258591",
+   "expiresAt":1610868026,
+   "generatedAt":1610867125800,
+   "contract":"0xc57d000000000000000000000000000000000002",
+   "v":27,
+   "r":"0x19b567db10ddd7c64cd0bb4c012b8a77266515b54e488730b1a1aca79ea783d8",
+   "s":"0x0a052b90cf91623f724d64dc441012cd703b8c0b49ac9b67795ed5f5f61ebbd6"
+}
+```
+
+**Warning**: the `"amount"` field is in units *not in wei*. 1 means 1 ETH.
+
+Contact our team to get your `origin` whitelisted.
+
+#### GET v1/contracts/<contract-address>/capacity
+
+Returns the available capacity for a particular contract in both ETH and DAI.
+Based on available capacity you can decide whether a cover can be offered or not.
+(sum assured of that cover < available capacity).
+
+Example Kovan call:
+```
+curl  -X GET  -H "Origin: http://yourcustomorigin.com" 'https://api.staging.nexusmutual.io/v1/contracts/0xC57D000000000000000000000000000000000002/capacity'
+```
+
+Example Mainnet call:
+```
+curl  -X GET  -H "Origin: http://yourcustomorigin.com" 'https://api.nexusmutual.io/v1/contracts/0xC57D000000000000000000000000000000000002/capacity'
+``` 
+
+Example response:
+
+```
+{
+   "capacityETH":"3652580281259279314200",
+   "capacityDAI":"4330350165767307632900000",
+   "netStakedNXM":"51152035000000000000000",
+   "capacityLimit":"STAKED_CAPACITY"
+}
+```
+
+#### GET coverables/contracts.json
+
+Provides you with a list of contracts that can be covered to display within your app.
+
+Example call:
+
+```
+ curl https://api.nexusmutual.io/coverables/contracts.json
+```
+
+Example response:
+
+```
+{
+  "0xF5DCe57282A584D2746FaF1593d3121Fcac444dC":{
+    "name":"Compound Sai",
+    "type": "contract",
+    "dateAdded":"2020-01-01",
+    "deprecated":true
+  },
+  "0x8B3d70d628Ebd30D4A2ea82DB95bA2e906c71633":{
+    "name":"bZx",
+    "type": "contract",
+    "dateAdded":"2020-01-01",
+    "logo":"https://api.nexusmutual.io/coverables/images/bzx.png",
+    "github":"https://github.com/bZxNetwork",
+    "messari":""
+  },
+}
+```
+
+Important: If an entry has `"deprecated": true` skip it. no more covers can be bought on it. 
 
 
 
