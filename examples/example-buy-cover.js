@@ -2,6 +2,7 @@ const fetch = require('node-fetch');
 const { artifacts, web3 } = require('hardhat');
 const { ether } = require('@openzeppelin/test-helpers');
 const { hex } = require('../test/utils/helpers');
+const BN = web3.utils.BN;
 
 const Distributor = artifacts.require('Distributor');
 
@@ -40,13 +41,18 @@ async function run () {
   const distributor = await Distributor.at(DISTRIBUTOR_ADDRESS);
   const feePercentage = await distributor.feePercentage();
   const basePrice = new BN(quote.price);
-  const priceWithFee = basePrice.muln(feePercentage).divn(10000).add(basePrice);
+  const priceWithFee = basePrice.mul(feePercentage).divn(10000).add(basePrice);
+
+  console.log({
+    feePercentage: feePercentage.toString(),
+    priceWithFee: priceWithFee.toString()
+  });
 
   // quote-api signed quotes are cover type = 0
   const COVER_TYPE = 0;
 
-  const amountInWei = ether(coverData.amount);
-
+  const amountInWei = ether(coverData.coverAmount.toString());
+  
   await distributor.buyCover(
     coverData.contractAddress,
     coverData.asset,
