@@ -29,7 +29,7 @@ async function run () {
       min: 0,
       round: 2,
       name: 'feePercentage',
-      message: 'Input your fee percentage (eg. 7.25)',
+      message: 'Input your fee percentage (eg. 7.25 for 7.25%)',
     },
     {
       type: 'text',

@@ -2,7 +2,10 @@
 ## NexusMutual distributor
 
 Sell NexusMutual cover to users without KYC.
+
 Earn revenue on each sale through an optional fee and the NXM deposit return!
+
+Issue NFTs for each NexusMutual cover that users own and can freely trade. 
 
 ### Addresses
 
@@ -16,16 +19,16 @@ TODO: fill in
 
 ### Integration
 
-To integrate with NexusMutual and start selling cover you deploy an instance
+To integrate with NexusMutual and start selling cover, deploy an instance
 of the Distributor contract using the available DistributorFactory.
 
 This contract becomes a NexusMutual member once the KYC for its address is approved.
-(KYC fee is paid at contract creation).
+(KYC fee is paid at contract creation as part of the call to the factory).
 
 #### Deployment
 
 ```
-# install all depedencies
+# install all dependencies
 npm i
 # create a .env with your configuration
 cp .env.sample .env
@@ -53,6 +56,11 @@ Users are able to go through the buy->claim->redeem cycle.
 
 #### buyCover
 
+Allows users to buy NexusMutual cover.
+
+For the cover pricing, the contract call currently requires a signed quote provided by
+the NexusMutual quote engine, which is then abi-encoded as part of the `data` parameter.
+
 ```
   function buyCover (
     address contractAddress,
@@ -71,6 +79,10 @@ Users are able to go through the buy->claim->redeem cycle.
 
 #### submitClaim
 
+Submit claim for the cover. Only one claim at a time can be active.
+
+The `data` field is currently unused.
+
 ```
   function submitClaim(
     uint tokenId,
@@ -81,6 +93,11 @@ Users are able to go through the buy->claim->redeem cycle.
 ```
 
 #### redeemClaim
+
+Owner of the cover token reedems its claim payout. The Claim must have been approved and paid out,
+to the distributor contract for this to succeed. 
+
+Once redeemed the NFT token is burned.
 
 ```
   function redeemClaim(
@@ -102,6 +119,13 @@ All distributor fees determined by the `feePercentage` are collected in the `tre
 The owner can also pause the use of `buyCover`, change the `feePercentage` and set the `treasury` address
 for storing its fees at any time.
 
+
+#### approveNXM
+
+```
+  function approveNXM(address spender, uint256 amount) public onlyOwner 
+```
+
 #### withdrawNXM
 
 ```
@@ -110,16 +134,24 @@ function withdrawNXM(address recipient, uint256 amount) public onlyOwner
 
 #### sellNXM
 
+Sell NXM stored in the distributor contract. The resulting ETH is sent to the `treasury` address.
+
 ```
 function sellNXM(uint nxmIn, uint minEthOut) external onlyOwner 
 ```
 
 #### switchMembership
+
+Switch membership to another address of your choice. Currently requires that all covers tied
+to the distributor are expired or claimed. 
+
 ```
 function switchMembership(address newAddress) external onlyOwner 
 ```
 
 #### setFeePercentage
+
+Change the added fee on top of cover purchases at any time.
 
 ```
 function setFeePercentage(uint _feePercentage) external onlyOwner 
@@ -127,18 +159,21 @@ function setFeePercentage(uint _feePercentage) external onlyOwner
 
 #### setBuysAllowed
 
+Pause/unpause cover purchases at any time.
+
 ```
 function setBuysAllowed(bool _buysAllowed) external onlyOwner 
 ```
 
 #### setTreasury
 
+Change where the distributor fees are sent to at any time.
+
 ```
 function setTreasury(address payable _treasury) external onlyOwner
 ```
 
 ### API endpoints
-
 
 
 #### GET /quote
