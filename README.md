@@ -16,6 +16,7 @@ Issue NFTs for each NexusMutual cover that users own and can freely trade.
 #### kovan
 
 DistributorFactory: `0x58505541E5341e3FB3d47645121602e4C77c08bF`
+NXMaster: `0x3152bE12988ECa5C9FB4102CF110771bA32A29dE`
 
 ### Integration
 
@@ -75,6 +76,11 @@ the NexusMutual quote engine, which is then abi-encoded as part of the `data` pa
     nonReentrant
     returns (uint)
 ```
+
+See the following example node.js code for buying cover. Equivalent code will have to be implemented
+on the UI side. Example code uses the hardhat `run` command to run and TruffleContract however it 
+should be easily translatable to frontend code that does the equivalent with the library of choice
+(web3, ethers etc.). 
 
 Example:
 
