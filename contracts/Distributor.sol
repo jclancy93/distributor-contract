@@ -221,6 +221,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   {
     if (assetAmount > 0) {
       if (asset == ETH) {
+        require(msg.value >= assetAmount, "Distributor: Insufficient ETH sent");
         (response, withheldAmount) = cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
         uint remainder = assetAmount.sub(withheldAmount);
         (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
