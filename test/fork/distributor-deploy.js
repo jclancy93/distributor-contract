@@ -48,6 +48,8 @@ const Address = {
   NXMHOLDER: '0xd7cba5b9a0240770cfd9671961dae064136fa240',
 };
 
+const owner = '0xeadaceccc5b32e0f2151a94ae5c3cfb11e349754';
+
 let isHardhat;
 const hardhatRequest = async (...params) => {
 
@@ -80,6 +82,14 @@ describe('creates distributor and approves KYC', function () {
     this.master = master;
     this.memberRoles = memberRoles;
     this.token = token;
+  });
+
+  it('funds accounts', async function () {
+
+    for (const account of [owner]) {
+      await fund(account);
+      await unlock(account);
+    }
   });
 
   it('deploys distributor', async function () {
