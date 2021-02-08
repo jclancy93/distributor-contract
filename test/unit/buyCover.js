@@ -79,7 +79,7 @@ describe('buyCover', function () {
         cover.type,
         data, {
           from: coverHolder,
-          value: priceWithFee.subn(1),
+          value: priceWithFee.subn(1e2),
         }),
       'Distributor: Insufficient ETH sent',
     );
@@ -113,7 +113,7 @@ describe('buyCover', function () {
     );
   });
 
-  it('reverts if payment token approval in insufficient', async function () {
+  it('reverts if ETH payment in insufficient', async function () {
     const { distributor, dai } = this.contracts;
 
     const cover = { ...daiCoverTemplate, asset: dai.address };
@@ -132,7 +132,7 @@ describe('buyCover', function () {
         cover.type,
         data, {
           from: coverHolder,
-          value: priceWithFee.subn(1),
+          value: priceWithFee.subn(1e2),
         }),
       'ERC20: transfer amount exceeds balance',
     );
@@ -151,7 +151,7 @@ describe('buyCover', function () {
     await dai.mint(coverHolder, ether('100000'), {
       from: coverHolder,
     });
-    await dai.approve(distributor.address, priceWithFee.subn(1), {
+    await dai.approve(distributor.address, priceWithFee.subn(1e2), {
       from: coverHolder,
     });
 

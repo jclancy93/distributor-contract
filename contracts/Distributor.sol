@@ -127,9 +127,13 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     if (coverAsset == ETH) {
       require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");
       uint remainder = msg.value.sub(coverPriceWithFee);
-      // solhint-disable-next-line avoid-low-level-calls
-      (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
-      require(ok, "Distributor: Returning ETH remainder to sender failed.");
+
+      if (remainder > 0) {
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
+        require(ok, "Distributor: Returning ETH remainder to sender failed.");
+      }
+
       buyCoverValue = coverPrice;
     } else {
       IERC20 token = IERC20(coverAsset);
@@ -219,25 +223,25 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     nonReentrant
     returns (bytes memory response, uint withheldAmount)
   {
-    if (assetAmount > 0) {
-      if (asset == ETH) {
-        require(msg.value >= assetAmount, "Distributor: Insufficient ETH sent");
-        (response, withheldAmount) = cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
-        uint remainder = assetAmount.sub(withheldAmount);
-        (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
-        require(ok, "Distributor: Returning ETH remainder to sender failed.");
-        return (response, withheldAmount);
-      }
-
-      IERC20 token = IERC20(asset);
-      token.safeTransferFrom(msg.sender, address(this), assetAmount);
-      token.approve(address(cover), assetAmount);
-      (response, withheldAmount) = cover.executeCoverAction(tokenId, action, data);
+    if (assetAmount == 0) {
+      return cover.executeCoverAction(tokenId, action, data);
+    }
+    if (asset == ETH) {
+      require(msg.value >= assetAmount, "Distributor: Insufficient ETH sent");
+      (response, withheldAmount) = cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
       uint remainder = assetAmount.sub(withheldAmount);
-      token.safeTransfer(msg.sender, remainder);
+      (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
+      require(ok, "Distributor: Returning ETH remainder to sender failed.");
       return (response, withheldAmount);
     }
-    return cover.executeCoverAction(tokenId, action, data);
+
+    IERC20 token = IERC20(asset);
+    token.safeTransferFrom(msg.sender, address(this), assetAmount);
+    token.approve(address(cover), assetAmount);
+    (response, withheldAmount) = cover.executeCoverAction(tokenId, action, data);
+    uint remainder = assetAmount.sub(withheldAmount);
+    token.safeTransfer(msg.sender, remainder);
+    return (response, withheldAmount);
   }
 
   /**

@@ -73,6 +73,7 @@ contract CoverMock is ICover, ReentrancyGuard {
         (
         coverPrice
         ) = abi.decode(data, (uint));
+        coverPrice = coverPrice.sub(1); // substracts a small amount to be sent back
     }
 
     function submitClaim(uint coverId, bytes calldata data) external override returns (uint) {
