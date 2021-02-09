@@ -33,7 +33,7 @@ async function run () {
   }
 
   // URL to request a quote for.
-  const quoteURL = `https://api.staging.nexusmutual.io/v1/quote?`
+  const quoteURL = `https://api.staging.nexusmutual.io/legacy/v1/quote?`
     + `coverAmount=${coverData.coverAmount}&currency=${coverData.currency}&period=${coverData.period}&contractAddress=${coverData.contractAddress}`;
 
   console.log(quoteURL);
@@ -61,10 +61,6 @@ async function run () {
 
   console.log('approve NXM...');
   const master = await NXMaster.at(await distributor.master());
-
-  const tokenAddress = await master.dAppToken();
-  const token = await NXMToken.at(tokenAddress);
-
   const tokenController = await TokenController.at(await master.getLatestAddress(hex('TC')));
 
   // needs to be done only once! necessary for receiving the locked NXM deposit.
@@ -87,6 +83,8 @@ async function run () {
     data, {
       value: priceWithFee,
     });
+
+  console.log('Bought cover successfully.');
 }
 
 run()
