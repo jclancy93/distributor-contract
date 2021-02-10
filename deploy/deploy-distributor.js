@@ -1,18 +1,18 @@
-const { artifacts, web3 } = require('hardhat');
+const { artifacts, web3, network } = require('hardhat');
 const { ether } = require('@openzeppelin/test-helpers');
 const prompts = require('prompts');
 
 const DistributorFactory = artifacts.require('DistributorFactory');
 const NXMaster = artifacts.require('NXMaster');
 
+const FACTORIES = {
+  'kovan': '0x58505541E5341e3FB3d47645121602e4C77c08bF',
+  'mainnet': undefined
+}
+
 async function run () {
+
   const params = await prompts([
-    {
-      type: 'text',
-      name: 'factoryAddress',
-      message: 'Input distributor factory address',
-      validate: value => web3.utils.isAddress(value) ? true : `Not a valid contract address`
-    },
     {
       type: 'text',
       name: 'tokenName',
@@ -38,12 +38,11 @@ async function run () {
       validate: value => web3.utils.isAddress(value) ? true : `Not a valid Ethereum address`
     },
   ]);
-
-  const { feePercentage, tokenName, tokenSymbol, factoryAddress, treasury } = params;
-  console.log(params);
+  const factoryAddress = FACTORIES[network.name];
   params.feePercentage *= 100;
-
-  console.log(`Deploying with factory: ${factoryAddress}`);
+  const { feePercentage, tokenName, tokenSymbol, treasury } = params;
+  
+  console.log(`Deploying on ${network.name} with factory: ${factoryAddress}`);
 
   const factory = await DistributorFactory.at(factoryAddress);
   const tx = await factory.newDistributor(
