@@ -563,4 +563,23 @@ describe('Distributor', function () {
       'Ownable: caller is not the owner',
     );
   });
+
+  it('reverts on executeCoverAction - no action supported at this time', async function () {
+    const { distributor } = this.contracts;
+
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
+    const coverId = 1;
+
+    const ethAmount = ether('1');
+    const action = 0;
+    const executeData = web3.eth.abi.encodeParameters(['uint'], [ethAmount.toString()]);
+    await expectRevert(
+      distributor.executeCoverAction(coverId, ethAmount, ETH, action, executeData, {
+        from: coverHolder,
+        value: ethAmount,
+      }),
+      'Unsupported action'
+    );
+  });
 });
