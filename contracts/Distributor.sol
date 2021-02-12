@@ -22,7 +22,6 @@ import "@openzeppelin/contracts-v3/access/Ownable.sol";
 import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/ICover.sol";
-import "hardhat/console.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/INXMaster.sol";
 
