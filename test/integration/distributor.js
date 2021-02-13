@@ -266,7 +266,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
     assert(payoutCompleted);
 
     const distributorEthBalanceAfterPayout = toBN(await web3.eth.getBalance(distributor.address));
@@ -297,7 +297,7 @@ describe('Distributor', function () {
     });
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
     assert(payoutCompleted);
     await distributor.redeemClaim(expectedClaimId, {
       from: coverHolder,
@@ -347,7 +347,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await coverContract.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
     assert(payoutCompleted);
 
     const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);
