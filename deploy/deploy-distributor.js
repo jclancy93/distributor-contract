@@ -6,7 +6,7 @@ const DistributorFactory = artifacts.require('DistributorFactory');
 const NXMaster = artifacts.require('NXMaster');
 
 const FACTORIES = {
-  'kovan': '0x58505541E5341e3FB3d47645121602e4C77c08bF',
+  'kovan': '0x414a39b668d6a955918423B21A5eaf102e73DC39',
   'mainnet': undefined
 }
 
@@ -41,7 +41,7 @@ async function run () {
   const factoryAddress = FACTORIES[network.name];
   params.feePercentage *= 100;
   const { feePercentage, tokenName, tokenSymbol, treasury } = params;
-  
+
   console.log(`Deploying on ${network.name} with factory: ${factoryAddress}`);
 
   const factory = await DistributorFactory.at(factoryAddress);

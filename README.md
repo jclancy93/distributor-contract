@@ -16,7 +16,7 @@ Issue NFTs for each NexusMutual cover that users own and can freely trade.
 
 #### kovan
 
-DistributorFactory: `0x58505541E5341e3FB3d47645121602e4C77c08bF`
+DistributorFactory: `0x414a39b668d6a955918423B21A5eaf102e73DC39`
 
 NXMaster: `0x3152bE12988ECa5C9FB4102CF110771bA32A29dE`
 
@@ -102,6 +102,7 @@ The `data` field is currently unused.
   )
     external
     onlyTokenApprovedOrOwner(tokenId)
+    returns (uint)
 ```
 
 #### redeemClaim
