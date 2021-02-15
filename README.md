@@ -16,9 +16,9 @@ Issue NFTs for each NexusMutual cover that users own and can freely trade.
 
 #### kovan
 
-DistributorFactory: `0x414a39b668d6a955918423B21A5eaf102e73DC39`
+DistributorFactory: `0xB2683eA644744FdD858E1Da0F43A6aa3B12d6183`
 
-NXMaster: `0x3152bE12988ECa5C9FB4102CF110771bA32A29dE`
+NXMaster: `0xf3b1018c6f1d5c2beCA1ebB4C7Bcf472D6721501`
 
 ### Integration
 
