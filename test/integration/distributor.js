@@ -222,6 +222,30 @@ describe('Distributor', function () {
     );
   });
 
+  it('revers if ETH amount is not whole unit', async function () {
+    const { distributor, qt } = this.contracts;
+
+    const coverData = { ...ethCoverTemplate, amount: ether('10').addn(1) };
+    const basePrice = toBN(coverData.price);
+
+    const data = await getBuyCoverDataParameter({ qt, coverData });
+    const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
+
+    await expectRevert(
+      distributor.buyCover(
+        coverData.contractAddress,
+        coverData.asset,
+        coverData.amount,
+        coverData.period,
+        coverData.type,
+        data, {
+          from: coverHolder,
+          value: priceWithFee,
+        }),
+      'Cover: Only whole unit sumAssured supported',
+    );
+  });
+
   it('allows claim submission for ETH cover and rejects resubmission while in-progress', async function () {
     const { distributor } = this.contracts;
 
