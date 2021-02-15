@@ -6,7 +6,7 @@ const DistributorFactory = artifacts.require('DistributorFactory');
 const NXMaster = artifacts.require('NXMaster');
 
 const FACTORIES = {
-  'kovan': '0x414a39b668d6a955918423B21A5eaf102e73DC39',
+  'kovan': '0xB2683eA644744FdD858E1Da0F43A6aa3B12d6183',
   'mainnet': undefined
 }
 

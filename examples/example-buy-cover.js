@@ -74,7 +74,7 @@ async function run () {
   });
 
   // execute the buy cover operation on behalf of the user.
-  await distributor.buyCover(
+  const tx = await distributor.buyCover(
     coverData.contractAddress,
     coverData.asset,
     amountInWei,
@@ -84,7 +84,8 @@ async function run () {
       value: priceWithFee,
     });
 
-  console.log('Bought cover successfully.');
+  const coverId = tx.logs[1].args.coverId.toString();
+  console.log(`Bought cover successfully. cover id: ${coverId}`);
 }
 
 run()
