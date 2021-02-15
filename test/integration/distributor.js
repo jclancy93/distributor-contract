@@ -290,8 +290,10 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
+    const { completed: payoutCompleted, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert(payoutCompleted);
+    assert.equal(amountPaid.toString(), coverData.amount.toString());
+    assert.equal(coverAsset, coverData.asset);
 
     const distributorEthBalanceAfterPayout = toBN(await web3.eth.getBalance(distributor.address));
 
@@ -371,8 +373,11 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
+    const { completed: payoutCompleted, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert(payoutCompleted);
+    assert.equal(amountPaid.toString(), coverData.amount.toString());
+    assert.equal(coverAsset, coverData.asset);
+
 
     const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);
 
