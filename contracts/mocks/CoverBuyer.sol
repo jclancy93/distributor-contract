@@ -33,7 +33,7 @@ contract CoverBuyer {
         uint8 coverType,
         bytes calldata data
     ) external payable {
-        distributor.buyCover{ value: msg.value }(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, data);
+        distributor.buyCover{ value: msg.value }(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, 2 * msg.value, data);
     }
 
     receive () payable external {

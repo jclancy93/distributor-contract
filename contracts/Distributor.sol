@@ -111,6 +111,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint sumAssured,
     uint16 coverPeriod,
     uint8 coverType,
+    uint maxPriceWithFee,
     bytes calldata data
   )
     external
@@ -122,6 +123,8 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
 
     uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
+    require(coverPriceWithFee <= maxPriceWithFee, "Distributor: cover price with fee exceeds max");
+
     uint buyCoverValue = 0;
     if (coverAsset == ETH) {
       require(msg.value >= coverPriceWithFee, "Distributor: Insufficient ETH sent");

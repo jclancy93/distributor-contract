@@ -73,7 +73,7 @@ describe('creates distributor and approves KYC', function () {
 
   it('initializes contracts', async function () {
 
-    const {mainnet: {abis}} = await fetch('https://api.nexusmutual.io/version-data/data.json').then(r => r.json());
+    const { mainnet: { abis } } = await fetch('https://api.nexusmutual.io/version-data/data.json').then(r => r.json());
     const getAddressByCode = getAddressByCodeFactory(abis);
 
     const token = await NXMToken.at(getAddressByCode('NXMTOKEN'));
@@ -97,9 +97,9 @@ describe('creates distributor and approves KYC', function () {
     const params = {
       feePercentage: 10,
       tokenName: 'magictoken',
-      tokenSymbol: "MT",
+      tokenSymbol: 'MT',
       factoryAddress: '0x58505541E5341e3FB3d47645121602e4C77c08bF',
-      treasury: '0xeadaceccc5b32e0f2151a94ae5c3cfb11e349754'
+      treasury: '0xeadaceccc5b32e0f2151a94ae5c3cfb11e349754',
     };
 
     const { feePercentage, tokenName, tokenSymbol, factoryAddress, treasury } = params;
@@ -114,7 +114,7 @@ describe('creates distributor and approves KYC', function () {
       treasury,
       tokenName,
       tokenSymbol,
-      { value: ether('0.002') }
+      { value: ether('0.002') },
     );
     console.log(tx);
     const distributorAddress = tx.logs[0].args.contractAddress;

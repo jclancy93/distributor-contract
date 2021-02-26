@@ -52,6 +52,7 @@ describe('buyCover', function () {
         cover.amount,
         cover.period,
         cover.type,
+        priceWithFee,
         data, {
           from: coverHolder,
           value: priceWithFee,
@@ -77,6 +78,7 @@ describe('buyCover', function () {
         cover.amount,
         cover.period,
         cover.type,
+        priceWithFee,
         data, {
           from: coverHolder,
           value: priceWithFee.subn(1e2),
@@ -130,6 +132,7 @@ describe('buyCover', function () {
         cover.amount,
         cover.period,
         cover.type,
+        priceWithFee,
         data, {
           from: coverHolder,
           value: priceWithFee.subn(1e2),
@@ -162,6 +165,7 @@ describe('buyCover', function () {
         cover.amount,
         cover.period,
         cover.type,
+        priceWithFee,
         data, {
           from: coverHolder,
         }),
@@ -187,6 +191,7 @@ describe('buyCover', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -229,6 +234,7 @@ describe('buyCover', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -264,6 +270,7 @@ describe('buyCover', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee.add(extraEth),
@@ -297,6 +304,7 @@ describe('buyCover', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
       });

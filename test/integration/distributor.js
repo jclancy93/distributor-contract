@@ -57,6 +57,7 @@ async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
       coverData.amount,
       coverData.period,
       coverData.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -71,6 +72,7 @@ async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
       coverData.amount,
       coverData.period,
       coverData.type,
+      priceWithFee,
       data, {
         from: coverHolder,
       });
@@ -215,6 +217,7 @@ describe('Distributor', function () {
         coverData.amount,
         coverData.period,
         coverData.type,
+        priceWithFee,
         data, {
           from: coverHolder,
         }),
@@ -222,7 +225,32 @@ describe('Distributor', function () {
     );
   });
 
-  it('revers if ETH amount is not whole unit', async function () {
+  it('reverts if max price with fee max is exceeded', async function () {
+    const { distributor, qt } = this.contracts;
+
+    const coverData = { ...ethCoverTemplate };
+    const basePrice = toBN(coverData.price);
+
+    const data = await getBuyCoverDataParameter({ qt, coverData });
+    const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
+
+    await expectRevert(
+      distributor.buyCover(
+        coverData.contractAddress,
+        coverData.asset,
+        coverData.amount,
+        coverData.period,
+        coverData.type,
+        priceWithFee.subn(1),
+        data, {
+          from: coverHolder,
+          value: priceWithFee,
+        }),
+      'Distributor: cover price with fee exceeds max',
+    );
+  });
+
+  it('reverts if ETH amount is not whole unit', async function () {
     const { distributor, qt } = this.contracts;
 
     const coverData = { ...ethCoverTemplate, amount: ether('10').addn(1) };
@@ -238,6 +266,7 @@ describe('Distributor', function () {
         coverData.amount,
         coverData.period,
         coverData.type,
+        priceWithFee,
         data, {
           from: coverHolder,
           value: priceWithFee,
@@ -377,7 +406,6 @@ describe('Distributor', function () {
     assert(payoutCompleted);
     assert.equal(amountPaid.toString(), coverData.amount.toString());
     assert.equal(coverAsset, coverData.asset);
-
 
     const distributorDAIBalanceAfterPayout = await dai.balanceOf(distributor.address);
 
@@ -608,7 +636,7 @@ describe('Distributor', function () {
         from: coverHolder,
         value: ethAmount,
       }),
-      'Unsupported action'
+      'Unsupported action',
     );
   });
 });

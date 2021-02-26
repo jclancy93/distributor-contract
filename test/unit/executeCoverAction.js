@@ -41,6 +41,7 @@ describe('executeCoverAction', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -97,6 +98,7 @@ describe('executeCoverAction', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -124,8 +126,7 @@ describe('executeCoverAction', function () {
     assert.equal(coverContractBalanceAfter.sub(coverContractBalanceBefore).toString(), desiredTopUpAmount.toString());
   });
 
-
-  it(`reverts on cover action that doesn't send enough ETH`, async function () {
+  it('reverts on cover action that doesn\'t send enough ETH', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
     const cover = {
@@ -152,6 +153,7 @@ describe('executeCoverAction', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -169,11 +171,11 @@ describe('executeCoverAction', function () {
         from: coverHolder,
         value: sentTopUpAmount.subn(1),
       }),
-      'Distributor: Insufficient ETH sent'
+      'Distributor: Insufficient ETH sent',
     );
   });
 
-  it(`reverts on cover action that doesn't approve enough DAI`, async function () {
+  it('reverts on cover action that doesn\'t approve enough DAI', async function () {
     const { distributor, cover: coverContract, dai } = this.contracts;
 
     const cover = {
@@ -204,6 +206,7 @@ describe('executeCoverAction', function () {
       cover.amount,
       cover.period,
       cover.type,
+      priceWithFee,
       data, {
         from: coverHolder,
         value: priceWithFee,
@@ -224,7 +227,7 @@ describe('executeCoverAction', function () {
       distributor.executeCoverAction(coverId, sentTopUpAmount, dai.address, action, executeData, {
         from: coverHolder,
       }),
-      'ERC20: transfer amount exceeds allowance'
+      'ERC20: transfer amount exceeds allowance',
     );
   });
 });
