@@ -9,12 +9,12 @@ contract SelfKyc {
         memberRoles = _memberRoles;
     }
 
-    function joinMutual(address member) external payable {
+    function joinMutual(address payable member) external payable {
         memberRoles.payJoiningFee{value: msg.value }(member);
         memberRoles.kycVerdict(member, true);
     }
 
-    function approveKyc(address member) external payable {
+    function approveKyc(address payable member) external payable {
         memberRoles.kycVerdict(member, true);
     }
 }

@@ -18,4 +18,5 @@ pragma solidity ^0.7.4;
 interface IMemberRoles {
     function payJoiningFee(address _userAddress) external payable;
     function switchMembership(address _newAddress) external payable;
+    function kycVerdict(address payable _userAddress, bool verdict) external;
 }
