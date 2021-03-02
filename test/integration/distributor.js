@@ -1,7 +1,7 @@
 const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
-const { getBuyCoverDataParameter } = require('./external');
+const { getBuyCoverDataParameter, ClaimStatus } = require('./external');
 const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const BN = web3.utils.BN;
@@ -82,7 +82,7 @@ async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
 }
 
 async function voteOnClaim ({ claimId, verdict, cl, cd, master, voter }) {
-  await cl.submitCAVote(claimId, verdict, { from: voter });
+  await cl.submitCAVote(claimId, toBN(verdict), { from: voter });
 
   const minVotingTime = await cd.minVotingTime();
   await time.increase(minVotingTime.addn(1));
@@ -319,8 +319,8 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
-    assert(payoutCompleted);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
+    assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     assert.equal(amountPaid.toString(), coverData.amount.toString());
     assert.equal(coverAsset, coverData.asset);
 
@@ -339,6 +339,64 @@ describe('Distributor', function () {
     assert.equal(redeemedAmount.toString(), coverData.amount);
   });
 
+  it('reverts on redeem while claim is IN_PROGRESS', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+
+    await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder,
+    });
+
+    await expectRevert(
+        distributor.redeemClaim(expectedClaimId, {
+          from: coverHolder,
+          gasPrice: 0,
+        }),
+      'Distributor: Claim not accepted'
+    );
+
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
+    assert.equal(status.toString(), ClaimStatus.IN_PROGRESS);
+    assert.equal(amountPaid.toString(), '0');
+    assert.equal(coverAsset, coverData.asset);
+  });
+
+  it('reverts on redeem if claim is REJECTED', async function () {
+    const { distributor, cover: coverContract } = this.contracts;
+
+    const coverData = { ...ethCoverTemplate };
+    await buyCover({ ...this.contracts, coverData, coverHolder });
+    const expectedCoverId = 1;
+    const expectedClaimId = 1;
+
+    const emptyData = web3.eth.abi.encodeParameters([], []);
+
+    await distributor.submitClaim(expectedCoverId, emptyData, {
+      from: coverHolder,
+    });
+
+    await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '-1', voter: member1 });
+
+    await expectRevert(
+      distributor.redeemClaim(expectedClaimId, {
+        from: coverHolder,
+        gasPrice: 0,
+      }),
+      'Distributor: Claim not accepted'
+    );
+
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
+    assert.equal(status.toString(), ClaimStatus.REJECTED);
+    assert.equal(amountPaid.toString(), '0');
+    assert.equal(coverAsset, coverData.asset);
+  });
+
   it('reverts on double-redeem', async function () {
     const { distributor, cover: coverContract } = this.contracts;
 
@@ -352,8 +410,8 @@ describe('Distributor', function () {
     });
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted } = await distributor.getPayoutOutcome(expectedClaimId);
-    assert(payoutCompleted);
+    const { status } = await distributor.getPayoutOutcome(expectedClaimId);
+    assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     await distributor.redeemClaim(expectedClaimId, {
       from: coverHolder,
       gasPrice: 0,
@@ -402,8 +460,8 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { completed: payoutCompleted, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
-    assert(payoutCompleted);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
+    assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     assert.equal(amountPaid.toString(), coverData.amount.toString());
     assert.equal(coverAsset, coverData.asset);
 

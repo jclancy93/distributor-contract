@@ -193,8 +193,8 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     nonReentrant
   {
     uint claimId = claimIds[tokenId];
-    (bool payoutCompleted, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(claimId);
-    require(payoutCompleted, "Distributor: Claim accepted but payout not completed");
+    (ICover.ClaimStatus status, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(claimId);
+    require(status == ICover.ClaimStatus.ACCEPTED, "Distributor: Claim not accepted");
 
     _burn(tokenId);
     if (coverAsset == ETH) {
@@ -271,9 +271,9 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   function getPayoutOutcome(uint claimId)
   public
   view
-  returns (bool completed, uint amountPaid, address coverAsset)
+  returns (ICover.ClaimStatus status, uint amountPaid, address coverAsset)
   {
-    (completed, amountPaid, coverAsset) = cover.getPayoutOutcome(claimId);
+    (status, amountPaid, coverAsset) = cover.getPayoutOutcome(claimId);
   }
 
   /**

@@ -17,6 +17,8 @@ pragma solidity ^0.7.4;
 
 interface ICover {
 
+    enum ClaimStatus { IN_PROGRESS, ACCEPTED, REJECTED }
+
     function buyCover (
         address contractAddress,
         address coverAsset,
@@ -51,7 +53,7 @@ interface ICover {
 
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
-    function getPayoutOutcome(uint claimId) external view returns (bool completed, uint paidAmount, address asset);
+    function getPayoutOutcome(uint claimId) external view returns (ClaimStatus status, uint paidAmount, address asset);
 
     function executeCoverAction(uint tokenId, uint8 action, bytes calldata data) external payable returns (bytes memory, uint);
 

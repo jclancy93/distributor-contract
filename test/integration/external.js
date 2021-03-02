@@ -30,6 +30,12 @@ async function enrollClaimAssessor ({ tc }, assessors, options = {}) {
   }
 }
 
+const ClaimStatus = {
+  IN_PROGRESS: '0',
+  ACCEPTED: '1',
+  REJECTED: '2'
+}
+
 const enroll = {
   enrollMember,
   enrollClaimAssessor,
@@ -39,4 +45,5 @@ module.exports = {
   setup,
   enroll,
   getBuyCoverDataParameter,
+  ClaimStatus
 };
