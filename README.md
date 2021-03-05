@@ -128,6 +128,28 @@ Once redeemed the NFT token is burned.
     nonReentrant
 ```
 
+#### getPayoutOutcome
+
+Provides the current status of a claim.
+
+The `amountPaid` is the amount in wei paid out if the `status` == `ACCEPTED`.
+The `coverAsset` is the asset for the sum assured.
+
+```
+  function getPayoutOutcome(uint claimId)
+  public
+  view
+  returns (ICover.ClaimStatus status, uint amountPaid, address coverAsset)
+```
+
+The Claim statuses are:
+
+```
+    enum ClaimStatus { IN_PROGRESS, ACCEPTED, REJECTED }
+```
+
+All claims start with `IN_PROGRESS` and end up being `ACCEPTED` or `REJECTED`.
+
 #### Owner admin
 
 The contract accrues NXM over time as covers expire or are claimed. 

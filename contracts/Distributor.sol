@@ -268,6 +268,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     return cover.getCover(tokenId);
   }
 
+  /**
+  * @notice get state of a claim payout. Returns
+  * status of cover,  amount paid as part of the payout, address of the cover asset)
+  * @param claimId id of claim
+  */
   function getPayoutOutcome(uint claimId)
   public
   view
