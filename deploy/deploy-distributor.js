@@ -1,14 +1,12 @@
 const { artifacts, web3, network } = require('hardhat');
 const { ether } = require('@openzeppelin/test-helpers');
 const prompts = require('prompts');
+const { hex } = require('../test/utils/helpers');
+const { FACTORY } = require('./addresses');
 
 const DistributorFactory = artifacts.require('DistributorFactory');
 const NXMaster = artifacts.require('NXMaster');
-
-const FACTORIES = {
-  'kovan': '0xB2683eA644744FdD858E1Da0F43A6aa3B12d6183',
-  'mainnet': undefined
-}
+const SelfKyc = artifacts.require('SelfKyc');
 
 async function run () {
 
@@ -38,7 +36,7 @@ async function run () {
       validate: value => web3.utils.isAddress(value) ? true : `Not a valid Ethereum address`
     },
   ]);
-  const factoryAddress = FACTORIES[network.name];
+  const factoryAddress = FACTORY[network.name];
   params.feePercentage *= 100;
   const { feePercentage, tokenName, tokenSymbol, treasury } = params;
 
@@ -54,6 +52,16 @@ async function run () {
   );
   const distributorAddress = tx.logs[0].args.contractAddress;
   console.log(`Successfully deployed at ${distributorAddress}`);
+
+  if (network.name !== 'mainnet') {
+    console.log('Using test network. Self-approving kyc..');
+    const master = await NXMaster.at(await factory.master());
+    const { val: selfKycAddress } = await master.getOwnerParameters(hex('KYCAUTH'));
+    console.log({ selfKycAddress });
+    const selfKyc = await SelfKyc.at(selfKycAddress);
+    await selfKyc.approveKyc(distributorAddress);
+    console.log('KYC approved.');
+  }
 }
 
 run()
