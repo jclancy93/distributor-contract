@@ -49,7 +49,14 @@ npm run deploy-kovan
 
 ##### Kovan
 
-Get in touch with us on telegram to KYC your newly deployed contract.
+Distributors deployed with `npm run deploy-kovan` are already KYCed.
+
+If you want to KYC an EOA or another contract, use:
+
+`npm run kovan-self-kyc`
+
+This command assumes your `.env` has a `KOVAN_ACCOUNT` address
+with at least `0.002` KETH to pay for the joining fee. 
 
 ### Contract functionality
 
