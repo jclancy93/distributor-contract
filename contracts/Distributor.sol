@@ -102,6 +102,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   * @param coverAsset asset of the premium and of the sum assured.
   * @param sumAssured amount payable if claim is submitted and considered valid
   * @param coverType cover type dermining how the data parameter is decoded
+  * @param maxPriceWithFee max price (including fee) to be spent on the cover.
   * @param data abi-encoded field with additional cover data fields
   * @return token id
   */

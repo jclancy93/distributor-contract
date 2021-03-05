@@ -78,6 +78,7 @@ the NexusMutual quote engine, which is then abi-encoded as part of the `data` pa
     uint sumAssured,
     uint16 coverPeriod,
     uint8 coverType,
+    uint maxPriceWithFee,
     bytes calldata data
   )
     external
