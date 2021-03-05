@@ -53,8 +53,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint coverPrice
   );
 
-  mapping (uint => uint) public claimIds;
-
   /*
    feePercentage applied to every cover premium. has 2 decimals. eg.: 10.00% stored as 1000
   */
