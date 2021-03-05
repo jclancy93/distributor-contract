@@ -73,6 +73,9 @@ async function run () {
     COVER_TYPE
   });
 
+  // price is deterministic right now. can set the max price to be equal with the actual price.
+  const maxPriceWithFee = priceWithFee;
+
   // execute the buy cover operation on behalf of the user.
   const tx = await distributor.buyCover(
     coverData.contractAddress,
@@ -80,6 +83,7 @@ async function run () {
     amountInWei,
     coverData.period,
     COVER_TYPE,
+    maxPriceWithFee,
     data, {
       value: priceWithFee,
     });

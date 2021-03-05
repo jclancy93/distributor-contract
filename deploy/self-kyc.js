@@ -38,7 +38,6 @@ async function run () {
 
   console.log('Approving kyc..');
   const addressToKYC =  params.addressToKYC;
-  console.log({ addressToKYC });
   await selfKyc.joinMutual(addressToKYC, {
     value: ether('0.002')
   });
