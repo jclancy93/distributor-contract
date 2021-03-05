@@ -80,7 +80,7 @@ contract CoverMock is ICover, ReentrancyGuard {
         revert("Unsupported");
     }
 
-    function getPayoutOutcome(uint claimId) external view override returns (ClaimStatus, uint, address) {
+    function getPayoutOutcome(uint coverId, uint claimId) external view override returns (ClaimStatus, uint, address) {
         revert("Unsupported");
     }
 
