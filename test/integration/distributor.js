@@ -306,8 +306,12 @@ describe('Distributor', function () {
     const { distributor, cover: coverContract } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
+
+    // pre-existing cover purchase
     await buyCover({ ...this.contracts, coverData, coverHolder });
-    const expectedCoverId = 1;
+
+    await buyCover({ ...this.contracts, coverData:  { ...coverData, generationTime: coverData.generationTime + 1 }, coverHolder });
+    const expectedCoverId = 2;
     const expectedClaimId = 1;
 
     const emptyData = web3.eth.abi.encodeParameters([], []);
@@ -447,8 +451,10 @@ describe('Distributor', function () {
       from: coverHolder,
     });
 
+    // pre-existing cover purchase
     await buyCover({ ...this.contracts, coverData, coverHolder });
-    const expectedCoverId = 1;
+    await buyCover({ ...this.contracts, coverData:  { ...coverData, generationTime: coverData.generationTime + 1 }, coverHolder });
+    const expectedCoverId = 2;
     const expectedClaimId = 1;
 
     const emptyData = web3.eth.abi.encodeParameters([], []);

@@ -192,7 +192,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     nonReentrant
   {
     uint coverId = cover.getClaimCoverId(claimId);
-    require(coverId == claimId, "Distributor: coverId claimId mismatch");
+    require(coverId == tokenId, "Distributor: coverId claimId mismatch");
     (ICover.ClaimStatus status, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(claimId);
     require(status == ICover.ClaimStatus.ACCEPTED, "Distributor: Claim not accepted");
 
