@@ -319,7 +319,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     assert.equal(amountPaid.toString(), coverData.amount.toString());
     assert.equal(coverAsset, coverData.asset);
@@ -361,7 +361,7 @@ describe('Distributor', function () {
       'Distributor: Claim not accepted'
     );
 
-    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.IN_PROGRESS);
     assert.equal(amountPaid.toString(), '0');
     assert.equal(coverAsset, coverData.asset);
@@ -391,7 +391,7 @@ describe('Distributor', function () {
       'Distributor: Claim not accepted'
     );
 
-    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.REJECTED);
     assert.equal(amountPaid.toString(), '0');
     assert.equal(coverAsset, coverData.asset);
@@ -410,7 +410,7 @@ describe('Distributor', function () {
     });
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { status } = await distributor.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { status } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     await distributor.redeemClaim(expectedCoverId, expectedClaimId, {
       from: coverHolder,
@@ -460,7 +460,7 @@ describe('Distributor', function () {
 
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '1', voter: member1 });
 
-    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedCoverId, expectedClaimId);
+    const { status, amountPaid, coverAsset } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.ACCEPTED);
     assert.equal(amountPaid.toString(), coverData.amount.toString());
     assert.equal(coverAsset, coverData.asset);
