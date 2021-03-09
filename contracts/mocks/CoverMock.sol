@@ -80,6 +80,10 @@ contract CoverMock is ICover, ReentrancyGuard {
         revert("Unsupported");
     }
 
+    function getClaimCoverId(uint claimId) external view override returns (uint) {
+        revert("Unsupported");
+    }
+
     function getPayoutOutcome(uint claimId) external view override returns (ClaimStatus, uint, address) {
         revert("Unsupported");
     }
@@ -101,9 +105,6 @@ contract CoverMock is ICover, ReentrancyGuard {
         revert("Unsupported");
     }
 
-    /**
-    *
-    */
     function executeCoverAction(uint coverId, uint8 action, bytes calldata data)
     external
     payable

@@ -53,8 +53,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint coverPrice
   );
 
-  mapping (uint => uint) public claimIds;
-
   /*
    feePercentage applied to every cover premium. has 2 decimals. eg.: 10.00% stored as 1000
   */
@@ -177,7 +175,6 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   {
     // coverId = tokenId
     uint claimId = cover.submitClaim(tokenId, data);
-    claimIds[tokenId] = claimId;
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
     return claimId;
   }
@@ -187,13 +184,15 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   * @param tokenId cover token id
   */
   function redeemClaim(
-    uint256 tokenId
+    uint256 tokenId,
+    uint claimId
   )
     public
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    uint claimId = claimIds[tokenId];
+    uint coverId = cover.getClaimCoverId(claimId);
+    require(coverId == tokenId, "Distributor: coverId claimId mismatch");
     (ICover.ClaimStatus status, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(claimId);
     require(status == ICover.ClaimStatus.ACCEPTED, "Distributor: Claim not accepted");
 

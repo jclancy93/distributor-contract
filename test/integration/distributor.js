@@ -306,8 +306,12 @@ describe('Distributor', function () {
     const { distributor, cover: coverContract } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
+
+    // pre-existing cover purchase
     await buyCover({ ...this.contracts, coverData, coverHolder });
-    const expectedCoverId = 1;
+
+    await buyCover({ ...this.contracts, coverData:  { ...coverData, generationTime: coverData.generationTime + 1 }, coverHolder });
+    const expectedCoverId = 2;
     const expectedClaimId = 1;
 
     const emptyData = web3.eth.abi.encodeParameters([], []);
@@ -330,7 +334,7 @@ describe('Distributor', function () {
     assert.equal(payoutAmount.toString(), coverData.amount);
 
     const coverHolderEthBalanceBefore = toBN(await web3.eth.getBalance(coverHolder));
-    await distributor.redeemClaim(expectedClaimId, {
+    await distributor.redeemClaim(expectedCoverId, expectedClaimId, {
       from: coverHolder,
       gasPrice: 0,
     });
@@ -354,7 +358,7 @@ describe('Distributor', function () {
     });
 
     await expectRevert(
-        distributor.redeemClaim(expectedClaimId, {
+        distributor.redeemClaim(expectedCoverId, expectedClaimId, {
           from: coverHolder,
           gasPrice: 0,
         }),
@@ -384,7 +388,7 @@ describe('Distributor', function () {
     await voteOnClaim({ ...this.contracts, claimId: expectedClaimId, verdict: '-1', voter: member1 });
 
     await expectRevert(
-      distributor.redeemClaim(expectedClaimId, {
+      distributor.redeemClaim(expectedCoverId, expectedClaimId, {
         from: coverHolder,
         gasPrice: 0,
       }),
@@ -412,14 +416,14 @@ describe('Distributor', function () {
 
     const { status } = await distributor.getPayoutOutcome(expectedClaimId);
     assert.equal(status.toString(), ClaimStatus.ACCEPTED);
-    await distributor.redeemClaim(expectedClaimId, {
+    await distributor.redeemClaim(expectedCoverId, expectedClaimId, {
       from: coverHolder,
       gasPrice: 0,
     });
 
     // cannot be redeemed twice
     await expectRevert(
-      distributor.redeemClaim(expectedCoverId, {
+      distributor.redeemClaim(expectedCoverId, expectedClaimId, {
         from: coverHolder,
       }),
       'VM Exception while processing transaction: revert ERC721: operator query for nonexistent token',
@@ -447,8 +451,10 @@ describe('Distributor', function () {
       from: coverHolder,
     });
 
+    // pre-existing cover purchase
     await buyCover({ ...this.contracts, coverData, coverHolder });
-    const expectedCoverId = 1;
+    await buyCover({ ...this.contracts, coverData:  { ...coverData, generationTime: coverData.generationTime + 1 }, coverHolder });
+    const expectedCoverId = 2;
     const expectedClaimId = 1;
 
     const emptyData = web3.eth.abi.encodeParameters([], []);
@@ -471,7 +477,7 @@ describe('Distributor', function () {
     assert.equal(payoutAmount.toString(), coverData.amount);
 
     const coverHolderDAIBalanceBefore = await dai.balanceOf(coverHolder);
-    await distributor.redeemClaim(expectedClaimId, {
+    await distributor.redeemClaim(expectedCoverId, expectedClaimId, {
       from: coverHolder,
       gasPrice: 0,
     });
