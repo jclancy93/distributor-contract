@@ -223,11 +223,10 @@ describe('executeCoverAction', function () {
       from: coverHolder,
     });
 
-    await expectRevert(
+    await expectRevert.unspecified(
       distributor.executeCoverAction(coverId, sentTopUpAmount, dai.address, action, executeData, {
         from: coverHolder,
-      }),
-      'ERC20: transfer amount exceeds allowance',
+      })
     );
   });
 });
