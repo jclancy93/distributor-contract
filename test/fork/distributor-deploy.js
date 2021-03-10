@@ -37,6 +37,25 @@ const ERC20 = artifacts.require('ERC20');
 const SwapAgent = artifacts.require('SwapAgent');
 const TwapOracle = artifacts.require('TwapOracle');
 const DistributorFactory = artifacts.require('DistributorFactory');
+const Cover = artifacts.require('Cover');
+
+
+const { submitGovernanceProposal } = require('./external').utils;
+const { hex } = require('../utils').helpers;
+const { ProposalCategory, Role } = require('../utils').constants;
+
+
+const ProposalCategory = {
+  addCategory: 3,
+  editCategory: 4,
+  upgradeProxy: 5,
+  startEmergencyPause: 6,
+  addEmergencyPause: 7, // extend or switch off emergency pause
+  upgradeNonProxy: 29,
+  newContract: 34,
+  upgradeMaster: 37,
+};
+
 
 const Address = {
   ETH: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
@@ -92,6 +111,76 @@ describe('creates distributor and approves KYC', function () {
     }
   });
 
+  it('upgrades contracts', async function () {
+    const { master, governance, voters, poolData, oldMCR, getAddressByCode } = this;
+    console.log('Deploying contracts');
+
+    const newCL = await Claims.new();
+    const newMR = await MemberRoles.new();
+    const newQuotation = await Quotation.new();
+
+
+    const upgradesActionData = web3.eth.abi.encodeParameters(
+      ['bytes2[]', 'address[]'],
+      [
+        ['CL', 'QT', 'MR'].map(hex),
+        [newCL, newQuotation, newMR].map(c => c.address),
+      ],
+    );
+
+    await submitGovernanceProposal(
+      ProposalCategory.upgradeNonProxy,
+      upgradesActionData,
+      voters,
+      governance,
+    );
+
+    const storedCLAddress = await master.getLatestAddress(hex('CL'));
+    const storedQTAddress = await master.getLatestAddress(hex('QT'));
+    const storedMRAddress = await master.getLatestAddress(hex('MR'));
+
+    assert.equal(storedCLAddress, newCL.address);
+    assert.equal(storedQTAddress, newQuotation.address);
+    assert.equal(storedMRAddress, newMR.address);
+
+    console.log('Upgrade successful.');
+
+
+  });
+
+  it('adds new Cover.sol contract', async function () {
+    const { master } = this;
+    console.log('Adding new cover contract..');
+    const coverImplementation = await Cover.new();
+
+
+    // Creating proposal for adding new internal contract
+    const addNewInternalContractActionData = web3.eth.abi.encodeParameters(
+      ['bytes2', 'address', 'uint'],
+      [hex('CO'), coverImplementation.address, 2],
+    );
+
+    await submitGovernanceProposal(
+      ProposalCategory.newContract,
+      addNewInternalContractActionData,
+      voters,
+      governance
+    );
+
+    const coverProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('CO')));
+    const storedImplementation = await coverProxy.implementation();
+
+    assert.equal(storedImplementation, coverImplementation.address);
+
+    const cover = await Cover.at(await master.getLatestAddress(hex('CO')));
+
+    const storedDAI = await cover.DAI();
+    assert.equal(storedDAI, Address.DAI);
+
+
+    this.cover = cover;
+  });
+
   it('deploys distributor', async function () {
 
     const params = {
@@ -127,7 +216,13 @@ describe('creates distributor and approves KYC', function () {
 
     console.log('Approving kyc..');
 
-    await memberRoles.kycVerdict(distributorAddress, true);
+    const kycAuthorityAddress = await master.getOwnerParameters(hex('KYCAUTH'));
+    await fund(kycAuthorityAddress);
+    await unlock(kycAuthorityAddress);
+
+    await memberRoles.kycVerdict(distributorAddress, true, {
+      from: kycAuthorityAddress
+    });
     console.log('Done');
   });
 });
