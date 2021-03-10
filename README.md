@@ -122,7 +122,8 @@ Once redeemed the NFT token is burned.
 
 ```
   function redeemClaim(
-    uint256 tokenId
+    uint256 tokenId,
+    uint256 claimId
   )
     public
     onlyTokenApprovedOrOwner(tokenId)
