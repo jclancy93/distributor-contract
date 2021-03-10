@@ -136,25 +136,25 @@ describe('creates distributor and approves KYC', function () {
 
     console.log('Upgrading MR');
 
-    const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
-      ['bytes2[]', 'address[]'],
-      [
-        ['MR'].map(hex),
-        [newMR].map(c => c.address),
-      ],
-    );
-
-    await submitGovernanceProposal(
-      ProposalCategory.upgradeProxy,
-      upgradesActionDataProxy,
-      voters,
-      governance,
-    );
-
-    const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
-    const mrImplementation = await mrProxy.implementation();
-
-    assert.equal(mr.address, mrImplementation.address);
+    // const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
+    //   ['bytes2[]', 'address[]'],
+    //   [
+    //     ['MR'].map(hex),
+    //     [newMR].map(c => c.address),
+    //   ],
+    // );
+    //
+    // await submitGovernanceProposal(
+    //   ProposalCategory.upgradeProxy,
+    //   upgradesActionDataProxy,
+    //   voters,
+    //   governance,
+    // );
+    //
+    // const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
+    // const mrImplementation = await mrProxy.implementation();
+    //
+    // assert.equal(mr.address, mrImplementation.address);
 
     console.log('Proxy Upgrade successful.');
   });
@@ -188,6 +188,14 @@ describe('creates distributor and approves KYC', function () {
     const storedDAI = await cover.DAI();
     assert.equal(storedDAI, Address.DAI);
 
+    const masterAddress = await cover.master();
+    assert.equal(masterAddress, master.address);
+
+    // sanity check an arbitrary cover
+    const cover10 = await cover.getCover(10);
+    console.log(cover10);
+    assert.equal(cover10.coverAsset, '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
+    assert.equal(cover10.contractAddress, '0x448a5065aeBB8E423F0896E6c5D525C040f59af3');
 
     this.cover = cover;
   });
@@ -225,7 +233,6 @@ describe('creates distributor and approves KYC', function () {
       tokenSymbol,
       { value: ether('0.002') },
     );
-    console.log(tx);
     const distributorAddress = tx.logs[0].args.contractAddress;
     console.log(`Successfully deployed at ${distributorAddress}`);
     this.distributorAddress = distributorAddress;
@@ -236,7 +243,7 @@ describe('creates distributor and approves KYC', function () {
 
     console.log('Approving kyc..');
 
-    const kycAuthorityAddress = await master.getOwnerParameters(hex('KYCAUTH'));
+    const { val: kycAuthorityAddress } = await master.getOwnerParameters(hex('KYCAUTH'));
     await fund(kycAuthorityAddress);
     await unlock(kycAuthorityAddress);
 
