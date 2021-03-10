@@ -57,7 +57,6 @@ async function run () {
     console.log('Using test network. Self-approving kyc..');
     const master = await NXMaster.at(await factory.master());
     const { val: selfKycAddress } = await master.getOwnerParameters(hex('KYCAUTH'));
-    console.log({ selfKycAddress });
     const selfKyc = await SelfKyc.at(selfKycAddress);
     await selfKyc.approveKyc(distributorAddress);
     console.log('KYC approved.');
