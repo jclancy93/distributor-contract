@@ -109,32 +109,54 @@ describe('creates distributor and approves KYC', function () {
     const newQuotation = await Quotation.new();
 
 
-    const upgradesActionData = web3.eth.abi.encodeParameters(
+    console.log('Upgrading CL QT');
+
+    const upgradesActionDataNonProxy = web3.eth.abi.encodeParameters(
       ['bytes2[]', 'address[]'],
       [
-        ['CL', 'QT', 'MR'].map(hex),
-        [newCL, newQuotation, newMR].map(c => c.address),
+        ['CL', 'QT'].map(hex),
+        [newCL, newQuotation].map(c => c.address),
       ],
     );
 
     await submitGovernanceProposal(
       ProposalCategory.upgradeNonProxy,
-      upgradesActionData,
+      upgradesActionDataNonProxy,
       voters,
       governance,
     );
 
     const storedCLAddress = await master.getLatestAddress(hex('CL'));
     const storedQTAddress = await master.getLatestAddress(hex('QT'));
-    const storedMRAddress = await master.getLatestAddress(hex('MR'));
 
     assert.equal(storedCLAddress, newCL.address);
     assert.equal(storedQTAddress, newQuotation.address);
-    assert.equal(storedMRAddress, newMR.address);
 
-    console.log('Upgrade successful.');
+    console.log('Non-proxy upgrade successful.');
 
+    console.log('Upgrading MR');
 
+    const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
+      ['bytes2[]', 'address[]'],
+      [
+        ['MR'].map(hex),
+        [newMR].map(c => c.address),
+      ],
+    );
+
+    await submitGovernanceProposal(
+      ProposalCategory.upgradeProxy,
+      upgradesActionDataProxy,
+      voters,
+      governance,
+    );
+
+    const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
+    const mrImplementation = await mrProxy.implementation();
+
+    assert.equal(mr.address, mrImplementation.address);
+
+    console.log('Proxy Upgrade successful.');
   });
 
   it('adds new Cover.sol contract', async function () {
