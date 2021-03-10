@@ -17,7 +17,8 @@
     "self-kyc-kovan": "hardhat run --network kovan deploy/self-kyc.js",
     "test-unit": "hardhat test test/unit/index.js",
     "typechain": "hardhat typechain",
-    "example-kovan-buycover": "hardhat run --network kovan ./examples/example-buy-cover.js"
+    "example-kovan-buycover": "hardhat run --network kovan ./examples/example-buy-cover.js",
+    "test-fork": "TEST_ENV_FORK=https://parity.nexusmutual.io/ hardhat test test/fork/index.js"
   },
   "repository": {
     "type": "git",

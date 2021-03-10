@@ -1,18 +1,6 @@
-const { takeSnapshot, revertToSnapshot, reset } = require('../utils').evm;
-const { setup } = require('./external');
-
 describe('FORK TESTS', function () {
-
-  before(reset);
-  before(setup);
-
-  beforeEach(async function () {
-    this.snapshotId = await takeSnapshot();
-  });
-
-  afterEach(async function () {
-    await revertToSnapshot(this.snapshotId);
-  });
+  this.timeout(0);
+  this.slow(2000);
 
   require('./distributor-deploy');
 });

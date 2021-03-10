@@ -3,24 +3,12 @@ const { artifacts, web3, accounts, network } = require('hardhat');
 const { ether, expectRevert } = require('@openzeppelin/test-helpers');
 const Decimal = require('decimal.js');
 
-const { submitGovernanceProposal } = require('./utils');
-const { hex } = require('../utils').helpers;
-const { ProposalCategory, Role } = require('../utils').constants;
-
-const {
-  toDecimal,
-  calculateRelativeError,
-  percentageBN,
-  calculateEthForNXMRelativeError,
-} = require('../utils').tokenPrice;
-
 const { BN, toBN } = web3.utils;
 
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const MemberRoles = artifacts.require('MemberRoles');
-const Pool = artifacts.require('Pool');
+
 const NXMaster = artifacts.require('NXMaster');
-const TemporaryNXMaster = artifacts.require('TemporaryNXMaster');
 const NXMToken = artifacts.require('NXMToken');
 const Governance = artifacts.require('Governance');
 const PoolData = artifacts.require('PoolData');
@@ -28,21 +16,13 @@ const TokenFunctions = artifacts.require('TokenFunctions');
 const Claims = artifacts.require('Claims');
 const ClaimsReward = artifacts.require('ClaimsReward');
 const Quotation = artifacts.require('Quotation');
-const MCR = artifacts.require('MCR');
-const Pool2 = artifacts.require('Pool2');
-const LegacyPool1 = artifacts.require('LegacyPool1');
-const LegacyMCR = artifacts.require('LegacyMCR');
-const PriceFeedOracle = artifacts.require('PriceFeedOracle');
 const ERC20 = artifacts.require('ERC20');
-const SwapAgent = artifacts.require('SwapAgent');
-const TwapOracle = artifacts.require('TwapOracle');
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Cover = artifacts.require('Cover');
 
 
 const { submitGovernanceProposal } = require('./external').utils;
 const { hex } = require('../utils').helpers;
-const { ProposalCategory, Role } = require('../utils').constants;
 
 
 const ProposalCategory = {
@@ -98,21 +78,30 @@ describe('creates distributor and approves KYC', function () {
     const token = await NXMToken.at(getAddressByCode('NXMTOKEN'));
     const memberRoles = await MemberRoles.at(getAddressByCode('MR'));
     const master = await NXMaster.at(getAddressByCode(('NXMASTER')));
+    const governance = await Governance.at(getAddressByCode('GV'));
     this.master = master;
     this.memberRoles = memberRoles;
     this.token = token;
+    this.governance = governance;
   });
 
   it('funds accounts', async function () {
 
-    for (const account of [owner]) {
-      await fund(account);
-      await unlock(account);
+    console.log('Funding accounts');
+
+    const { memberArray: boardMembers } = await this.memberRoles.members('1');
+    const voters = boardMembers.slice(0, 3);
+
+    for (const member of [...voters, Address.NXMHOLDER, owner]) {
+      await fund(member);
+      await unlock(member);
     }
+
+    this.voters = voters;
   });
 
   it('upgrades contracts', async function () {
-    const { master, governance, voters, poolData, oldMCR, getAddressByCode } = this;
+    const { master, governance, voters } = this;
     console.log('Deploying contracts');
 
     const newCL = await Claims.new();
@@ -149,7 +138,7 @@ describe('creates distributor and approves KYC', function () {
   });
 
   it('adds new Cover.sol contract', async function () {
-    const { master } = this;
+    const { master, voters, governance } = this;
     console.log('Adding new cover contract..');
     const coverImplementation = await Cover.new();
 
@@ -181,7 +170,17 @@ describe('creates distributor and approves KYC', function () {
     this.cover = cover;
   });
 
+  it('deploys DistributorFactory', async function () {
+    const { master }  = this;
+
+    const factory = await DistributorFactory.new(master.address);
+
+    this.factory = factory;
+  });
+
   it('deploys distributor', async function () {
+
+    const { factory } = this;
 
     const params = {
       feePercentage: 10,
@@ -191,13 +190,12 @@ describe('creates distributor and approves KYC', function () {
       treasury: '0xeadaceccc5b32e0f2151a94ae5c3cfb11e349754',
     };
 
-    const { feePercentage, tokenName, tokenSymbol, factoryAddress, treasury } = params;
+    const { feePercentage, tokenName, tokenSymbol, treasury } = params;
     console.log(params);
     params.feePercentage *= 100;
 
-    console.log(`Deploying with factory: ${factoryAddress}`);
+    console.log(`Deploying with factory: ${factory.address}`);
 
-    const factory = await DistributorFactory.at(factoryAddress);
     const tx = await factory.newDistributor(
       feePercentage,
       treasury,
