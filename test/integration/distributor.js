@@ -43,12 +43,12 @@ const daiCoverTemplate = {
   contractAddress: '0xd0a6E6C54DbC68Db5db3A091B171A77407Ff7ccf',
 };
 
-async function buyCover ({ coverData, coverHolder, distributor, qt, dai }) {
+async function buyCover ({ coverData, coverHolder, distributor, qt, dai, feePercentage }) {
 
   const basePrice = new BN(coverData.price);
 
   const data = await getBuyCoverDataParameter({ qt, coverData });
-  const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE).divn(10000).add(basePrice);
+  const priceWithFee = basePrice.muln(DEFAULT_FEE_PERCENTAGE || feePercentage).divn(10000).add(basePrice);
 
   if (coverData.asset === ETH) {
     return await distributor.buyCover(
@@ -666,10 +666,28 @@ describe('Distributor', function () {
 
     const newFeePercentage = '20000';
 
-    const storedFeePercentage = await distributor.setFeePercentage(newFeePercentage, {
+    await distributor.setFeePercentage(newFeePercentage, {
       from: distributorOwner,
     });
+
+    const storedFeePercentage = await distributor.feePercentage();
     assert(storedFeePercentage.toString(), newFeePercentage);
+  });
+
+  it('allows purchases with 0% fee percentage', async function () {
+    const { distributor } = this.contracts;
+
+    const newFeePercentage = '0';
+
+    distributor.setFeePercentage(newFeePercentage, {
+      from: distributorOwner,
+    });
+    const storedFeePercentage = await distributor.feePercentage();
+    assert(storedFeePercentage.toString(), newFeePercentage);
+
+    const coverData = { ...ethCoverTemplate };
+
+    await buyCover({ ...this.contracts, coverData, coverHolder, feePercentage: newFeePercentage });
   });
 
   it('disallows setting the fee percentage by non-owner', async function () {
