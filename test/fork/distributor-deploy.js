@@ -136,25 +136,25 @@ describe('creates distributor and approves KYC', function () {
 
     console.log('Upgrading MR');
 
-    // const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
-    //   ['bytes2[]', 'address[]'],
-    //   [
-    //     ['MR'].map(hex),
-    //     [newMR].map(c => c.address),
-    //   ],
-    // );
-    //
-    // await submitGovernanceProposal(
-    //   ProposalCategory.upgradeProxy,
-    //   upgradesActionDataProxy,
-    //   voters,
-    //   governance,
-    // );
-    //
-    // const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
-    // const mrImplementation = await mrProxy.implementation();
-    //
-    // assert.equal(mr.address, mrImplementation.address);
+    const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
+      ['bytes2[]', 'address[]'],
+      [
+        ['MR'].map(hex),
+        [newMR].map(c => c.address),
+      ],
+    );
+
+    await submitGovernanceProposal(
+      ProposalCategory.upgradeProxy,
+      upgradesActionDataProxy,
+      voters,
+      governance,
+    );
+
+    const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
+    const mrImplementation = await mrProxy.implementation();
+
+    assert.equal(mr.address, mrImplementation.address);
 
     console.log('Proxy Upgrade successful.');
   });
