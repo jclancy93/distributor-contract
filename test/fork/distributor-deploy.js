@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 const { artifacts, web3, accounts, network } = require('hardhat');
-const { ether, expectRevert } = require('@openzeppelin/test-helpers');
+const { ether, expectRevert, time } = require('@openzeppelin/test-helpers');
 const Decimal = require('decimal.js');
 
 const { BN, toBN } = web3.utils;
@@ -19,6 +19,8 @@ const Quotation = artifacts.require('Quotation');
 const ERC20 = artifacts.require('ERC20');
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Cover = artifacts.require('Cover');
+
+const TokenController = artifacts.require('TokenController');
 
 
 const { submitGovernanceProposal } = require('./external').utils;
@@ -90,7 +92,7 @@ describe('creates distributor and approves KYC', function () {
     console.log('Funding accounts');
 
     const { memberArray: boardMembers } = await this.memberRoles.members('1');
-    const voters = boardMembers.slice(0, 3);
+    const voters = boardMembers.slice(1, 4);
 
     for (const member of [...voters, Address.NXMHOLDER, owner]) {
       await fund(member);
@@ -108,6 +110,8 @@ describe('creates distributor and approves KYC', function () {
     const newMR = await MemberRoles.new();
     const newQuotation = await Quotation.new();
 
+    const tcIsPRoxy = await master.isProxy(hex('TC'));
+    const mrIsPRoxy = await master.isProxy(hex('MR'));
 
     console.log('Upgrading CL QT');
 
@@ -144,17 +148,21 @@ describe('creates distributor and approves KYC', function () {
       ],
     );
 
-    await submitGovernanceProposal(
+    const proposalId = await submitGovernanceProposal(
       ProposalCategory.upgradeProxy,
       upgradesActionDataProxy,
       voters,
       governance,
     );
 
+    await time.increase(24 * 3600);
+    console.log('Triggering action');
+    await governance.triggerAction(proposalId);
+
     const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
     const mrImplementation = await mrProxy.implementation();
 
-    assert.equal(mr.address, mrImplementation.address);
+    assert.equal(newMR.address, mrImplementation);
 
     console.log('Proxy Upgrade successful.');
   });
@@ -193,7 +201,6 @@ describe('creates distributor and approves KYC', function () {
 
     // sanity check an arbitrary cover
     const cover10 = await cover.getCover(10);
-    console.log(cover10);
     assert.equal(cover10.coverAsset, '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
     assert.equal(cover10.contractAddress, '0x448a5065aeBB8E423F0896E6c5D525C040f59af3');
 
