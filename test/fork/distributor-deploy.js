@@ -11,17 +11,10 @@ const MemberRoles = artifacts.require('MemberRoles');
 const NXMaster = artifacts.require('NXMaster');
 const NXMToken = artifacts.require('NXMToken');
 const Governance = artifacts.require('Governance');
-const PoolData = artifacts.require('PoolData');
-const TokenFunctions = artifacts.require('TokenFunctions');
 const Claims = artifacts.require('Claims');
-const ClaimsReward = artifacts.require('ClaimsReward');
 const Quotation = artifacts.require('Quotation');
-const ERC20 = artifacts.require('ERC20');
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Cover = artifacts.require('Cover');
-
-const TokenController = artifacts.require('TokenController');
-
 
 const { submitGovernanceProposal } = require('./external').utils;
 const { hex } = require('../utils').helpers;
@@ -182,7 +175,7 @@ describe('creates distributor and approves KYC', function () {
       ],
     );
 
-    const proposalId = await submitGovernanceProposal(
+    await submitGovernanceProposal(
       ProposalCategory.upgradeProxy,
       upgradesActionDataProxy,
       voters,
