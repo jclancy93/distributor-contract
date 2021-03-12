@@ -102,6 +102,40 @@ describe('creates distributor and approves KYC', function () {
     this.voters = voters;
   });
 
+  it('updating category 5 (Upgrade Proxy) to use AB voting', async function () {
+    const { master, governance, voters } = this;
+
+    const functionSignature = 'upgradeMultipleImplementations(bytes2[],address[])';
+
+    const upgradesActionDataNonProxy = web3.eth.abi.encodeParameters(
+      ['uint256', 'string', 'uint256', 'uint256', 'uint256', 'uint256[]', 'uint256', 'string', 'address', 'bytes2', 'uint256[]', 'string'],
+      [
+        ProposalCategory.upgradeProxy.toString(), // 1. Category Id
+        'Upgrade a contract Implementation', // 2. Name of category
+        '1', // 3. role authorized to vote: AB !! this is the modification vs current state
+        '50', // 4. Majority % required for acceptance
+        '15', // 5.  Quorum % required for acceptance
+        ['2'], // 6. Role Ids allowed to create proposal
+        (3 * 24 * 3600).toString(), // 7. Proposal closing time - 3 days
+        'QmRKKFHv1xpUtSfyrtUMcrdE6sMEc4CgDUKU135YrAZqV7', // 8. IPFS hash of action to be executed
+        '0x0000000000000000000000000000000000000000', // 9. Address of external contract for action execution
+        hex('MS'), // 10. Contract code of internal contract for action execution
+        ['0', '0', '60', '0'], // 11. [Minimum stake, incentives, Advisory Board % required, Is Special Resolution ]
+        functionSignature, // 12. Function Signature
+      ],
+    );
+
+    await submitGovernanceProposal(
+      ProposalCategory.editCategory,
+      upgradesActionDataNonProxy,
+      voters,
+      governance,
+    );
+
+    console.log('Updated category successfully.');
+
+  });
+
   it('upgrades contracts', async function () {
     const { master, governance, voters } = this;
     console.log('Deploying contracts');
@@ -154,10 +188,6 @@ describe('creates distributor and approves KYC', function () {
       voters,
       governance,
     );
-
-    await time.increase(24 * 3600);
-    console.log('Triggering action');
-    await governance.triggerAction(proposalId);
 
     const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
     const mrImplementation = await mrProxy.implementation();
