@@ -113,12 +113,19 @@ The `data` field is currently unused.
     returns (uint)
 ```
 
+See the following example node.js code for submitting a claim for a particular cover (cover id matches the NFT token id).
+Example:
+
+https://github.com/NexusMutual/distributor-contract/blob/distributor-contract-v1/examples/example-submit-claim.js
+
 #### redeemClaim
 
 Owner of the cover token reedems its claim payout. The Claim must have been approved and paid out,
 to the distributor contract for this to succeed. 
 
 Once redeemed the NFT token is burned.
+
+To redeem a claim both the tokenId of the cover needs to be supplied and the claim id being redeemed. 
 
 ```
   function redeemClaim(
