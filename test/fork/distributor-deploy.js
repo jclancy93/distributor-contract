@@ -126,7 +126,6 @@ describe('creates distributor and approves KYC', function () {
     );
 
     console.log('Updated category successfully.');
-
   });
 
   it('upgrades contracts', async function () {

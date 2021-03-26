@@ -10,7 +10,7 @@ const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
-const ERC20DetailedMock = artifacts.require('ERC20DetailedMock');
+const ERC20BlacklistableMock = artifacts.require('ERC20BlacklistableMock');
 
 const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, treasury, newMemberAddress] = accounts;
 
@@ -182,7 +182,7 @@ describe('Distributor', function () {
   it('reverts when cover asset is not supported', async function () {
     const { distributor, qt } = this.contracts;
 
-    const unsupportedToken = await ERC20DetailedMock.new();
+    const unsupportedToken = await ERC20BlacklistableMock.new();
 
     const coverData = {
       amount: ether('10000'),
@@ -298,7 +298,7 @@ describe('Distributor', function () {
       distributor.submitClaim(expectedCoverId, emptyData, {
         from: coverHolder,
       }),
-      'Claims: Claim already submitted',
+      'VM Exception while processing transaction: revert TokenController: Cover already has an open claim',
     );
   });
 
@@ -558,7 +558,7 @@ describe('Distributor', function () {
   });
 
   it('contains NXM deposit after cover expiry', async function () {
-    const { distributor, qt, tk: token } = this.contracts;
+    const { distributor, qt: quotation, tk: token, tc: tokenController } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -566,28 +566,35 @@ describe('Distributor', function () {
     await time.increase((coverData.period + 1) * 24 * 3600);
 
     const nxmBalanceBeforeExpiry = await token.balanceOf(distributor.address);
-    await qt.expireCover(expectedCoverId);
+    await quotation.expireCover(expectedCoverId);
+
+    const gracePeriod = await tokenController.claimSubmissionGracePeriod();
+    await time.increase(gracePeriod);
+    await quotation.withdrawCoverNote(distributor.address, [expectedCoverId], ['0']);
+
     const nxmBalanceAfterExpiry = await token.balanceOf(distributor.address);
     const returnedNXM = nxmBalanceAfterExpiry.sub(nxmBalanceBeforeExpiry);
     assert.equal(returnedNXM.toString(), toBN(coverData.priceNXM).divn(10).toString());
   });
 
-  it('rejects a claim after cover expiration', async function () {
-    const { distributor, qt } = this.contracts;
+  it('rejects a claim after cover expiration and grace period passed', async function () {
+    const { distributor, qt: quotation, tc: tokenController } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
     const expectedCoverId = 1;
     await time.increase((coverData.period + 1) * 24 * 3600);
 
-    await qt.expireCover(expectedCoverId);
+    await quotation.expireCover(expectedCoverId);
+    const gracePeriod = await tokenController.claimSubmissionGracePeriod();
+    await time.increase(gracePeriod);
 
     const emptyData = web3.eth.abi.encodeParameters([], []);
     await expectRevert(
       distributor.submitClaim(expectedCoverId, emptyData, {
         from: coverHolder,
       }),
-      'Claims: Cover already expired',
+      'VM Exception while processing transaction: revert Claims: Grace period has expired',
     );
   });
 

@@ -18,7 +18,6 @@ import "../../nexusmutual-contracts/contracts/modules/governance/external/OwnedU
 import "../../nexusmutual-contracts/contracts/modules/claims/ClaimProofs.sol";
 
 import "../../nexusmutual-contracts/contracts/mocks/ERC20BlacklistableMock.sol";
-import "../../nexusmutual-contracts/contracts/mocks/ERC20DetailedMock.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Pool/P1MockChainlinkAggregator.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableNXMaster.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableMemberRoles.sol";
