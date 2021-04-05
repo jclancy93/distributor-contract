@@ -151,9 +151,7 @@ describe('buyCover', function () {
 
     const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
 
-    await dai.mint(coverHolder, ether('100000'), {
-      from: coverHolder,
-    });
+    await dai.mint(coverHolder, ether('100000'));
     await dai.approve(distributor.address, priceWithFee.subn(1e2), {
       from: coverHolder,
     });
@@ -290,9 +288,7 @@ describe('buyCover', function () {
 
     const data = web3.eth.abi.encodeParameters(['uint'], [basePrice]);
 
-    await dai.mint(coverHolder, ether('1000000'), {
-      from: coverHolder,
-    });
+    await dai.mint(coverHolder, ether('1000000'));
 
     await dai.approve(distributor.address, priceWithFee, {
       from: coverHolder,

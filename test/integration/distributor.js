@@ -157,9 +157,7 @@ describe('Distributor', function () {
     const coverData = { ...daiCoverTemplate, asset: dai.address };
 
     const buyerDAIFunds = ether('20000');
-    await dai.mint(coverHolder, buyerDAIFunds, {
-      from: coverHolder,
-    });
+    await dai.mint(coverHolder, buyerDAIFunds);
 
     const buyCoverTx = await buyCover({ ...this.contracts, coverData, coverHolder });
 
@@ -198,9 +196,7 @@ describe('Distributor', function () {
     };
 
     const buyerTokenFunds = ether('20000');
-    await unsupportedToken.mint(coverHolder, buyerTokenFunds, {
-      from: coverHolder,
-    });
+    await unsupportedToken.mint(coverHolder, buyerTokenFunds);
 
     const basePrice = new BN(coverData.price);
 
@@ -447,9 +443,7 @@ describe('Distributor', function () {
     };
 
     const buyerDAIFunds = ether('20000');
-    await dai.mint(coverHolder, buyerDAIFunds, {
-      from: coverHolder,
-    });
+    await dai.mint(coverHolder, buyerDAIFunds);
 
     // pre-existing cover purchase
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -535,9 +529,7 @@ describe('Distributor', function () {
     };
 
     const buyerDAIFunds = ether('20000');
-    await dai.mint(coverHolder, buyerDAIFunds, {
-      from: coverHolder,
-    });
+    await dai.mint(coverHolder, buyerDAIFunds);
     const daiCoversCount = 2;
     let totalPrice = toBN('0');
     for (let i = 0; i < daiCoversCount; i++) {
