@@ -12,9 +12,9 @@ async function setup () {
 
   const nxmToken = await ERC20Mock.new();
   const dai = await ERC20BlacklistableMock.new();
-  const cover = await GatewayMock.new();
+  const gateway = await GatewayMock.new();
   const distributor = await Distributor.new(
-    cover.address,
+    gateway.address,
     nxmToken.address,
     ZERO_ADDRESS,
     DEFAULT_FEE_PERCENTAGE,
@@ -24,7 +24,7 @@ async function setup () {
   );
   this.contracts = {
     nxmToken,
-    cover,
+    gateway,
     distributor,
     dai,
   };

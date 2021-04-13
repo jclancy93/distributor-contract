@@ -77,7 +77,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   constructor(
-    address coverAddress,
+    address gatewayAddress,
     address nxmTokenAddress,
     address masterAddress,
     uint _feePercentage,
@@ -90,7 +90,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   {
     feePercentage = _feePercentage;
     treasury = _treasury;
-    gateway = IGateway(coverAddress);
+    gateway = IGateway(gatewayAddress);
     nxmToken = IERC20(nxmTokenAddress);
     master = INXMaster(masterAddress);
   }

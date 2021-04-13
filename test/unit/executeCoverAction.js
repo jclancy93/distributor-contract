@@ -15,7 +15,7 @@ describe('executeCoverAction', function () {
   });
 
   it('executes custom action on an owned cover to top up its ETH value', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor, gateway } = this.contracts;
 
     const cover = {
       amount: ether('10'),
@@ -55,20 +55,20 @@ describe('executeCoverAction', function () {
     const action = 0;
     const executeData = web3.eth.abi.encodeParameters(['uint'], [desiredTopUpAmount.toString()]);
 
-    const coverContractBalanceBefore = toBN(await web3.eth.getBalance(coverContract.address));
+    const coverContractBalanceBefore = toBN(await web3.eth.getBalance(gateway.address));
     await distributor.executeCoverAction(coverId, sentTopUpAmount, ETH, action, executeData, {
       from: coverHolder,
       value: sentTopUpAmount,
     });
 
-    const { topUp } = await coverContract.covers(coverId);
+    const { topUp } = await gateway.covers(coverId);
     assert.equal(topUp.toString(), desiredTopUpAmount.toString());
-    const coverContractBalanceAfter = toBN(await web3.eth.getBalance(coverContract.address));
+    const coverContractBalanceAfter = toBN(await web3.eth.getBalance(gateway.address));
     assert.equal(coverContractBalanceAfter.sub(coverContractBalanceBefore).toString(), desiredTopUpAmount.toString());
   });
 
   it('executes custom action on an owned cover with a DAI transfer', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+    const { distributor, gateway, dai } = this.contracts;
 
     const cover = {
       amount: ether('10000'),
@@ -115,19 +115,19 @@ describe('executeCoverAction', function () {
       from: coverHolder,
     });
 
-    const coverContractBalanceBefore = await dai.balanceOf(coverContract.address);
+    const coverContractBalanceBefore = await dai.balanceOf(gateway.address);
     await distributor.executeCoverAction(coverId, sentTopUpAmount, dai.address, action, executeData, {
       from: coverHolder,
     });
-    const coverContractBalanceAfter = await dai.balanceOf(coverContract.address);
+    const coverContractBalanceAfter = await dai.balanceOf(gateway.address);
 
-    const { topUp } = await coverContract.covers(coverId);
+    const { topUp } = await gateway.covers(coverId);
     assert.equal(topUp.toString(), desiredTopUpAmount.toString());
     assert.equal(coverContractBalanceAfter.sub(coverContractBalanceBefore).toString(), desiredTopUpAmount.toString());
   });
 
   it('reverts on cover action that doesn\'t send enough ETH', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor, gateway } = this.contracts;
 
     const cover = {
       amount: ether('10'),
@@ -176,7 +176,7 @@ describe('executeCoverAction', function () {
   });
 
   it('reverts on cover action that doesn\'t approve enough DAI', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+    const { distributor, gateway, dai } = this.contracts;
 
     const cover = {
       amount: ether('10000'),
