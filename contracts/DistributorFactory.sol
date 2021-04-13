@@ -27,7 +27,7 @@ contract DistributorFactory {
 
         IMemberRoles memberRoles = IMemberRoles(master.getLatestAddress("MR"));
         Distributor d = new Distributor(
-            master.getLatestAddress("CO"),
+            master.getLatestAddress("GW"),
             master.tokenAddress(),
             address(master),
             _feePercentage,

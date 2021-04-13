@@ -21,9 +21,10 @@ import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-v3/access/Ownable.sol";
 import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
-import "./interfaces/ICover.sol";
+import "./interfaces/IGateway.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/INXMaster.sol";
+import "hardhat/console.sol";
 
 contract Distributor is ERC721, Ownable, ReentrancyGuard {
   using SafeMath for uint;
@@ -66,7 +67,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   /*
     NexusMutual contracts
   */
-  ICover immutable public cover;
+  IGateway immutable public gateway;
   IERC20 immutable public nxmToken;
   INXMaster immutable public master;
 
@@ -89,7 +90,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   {
     feePercentage = _feePercentage;
     treasury = _treasury;
-    cover = ICover(coverAddress);
+    gateway = IGateway(coverAddress);
     nxmToken = IERC20(nxmTokenAddress);
     master = INXMaster(masterAddress);
   }
@@ -120,7 +121,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   {
     require(buysAllowed, "Distributor: buys not allowed");
 
-    uint coverPrice = cover.getCoverPrice(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, data);
+    uint coverPrice = gateway.getCoverPrice(contractAddress, coverAsset, sumAssured, coverPeriod, coverType, data);
     uint coverPriceWithFee = feePercentage.mul(coverPrice).div(10000).add(coverPrice);
     require(coverPriceWithFee <= maxPriceWithFee, "Distributor: cover price with fee exceeds max");
 
@@ -139,10 +140,10 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     } else {
       IERC20 token = IERC20(coverAsset);
       token.safeTransferFrom(msg.sender, address(this), coverPriceWithFee);
-      token.approve(address(cover), coverPrice);
+      token.approve(address(gateway), coverPrice);
     }
 
-    uint coverId = cover.buyCover{value: buyCoverValue }(
+    uint coverId = gateway.buyCover{value: buyCoverValue }(
       contractAddress,
       coverAsset,
       sumAssured,
@@ -174,7 +175,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     returns (uint)
   {
     // coverId = tokenId
-    uint claimId = cover.submitClaim(tokenId, data);
+    uint claimId = gateway.submitClaim(tokenId, data);
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
     return claimId;
   }
@@ -191,10 +192,10 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     onlyTokenApprovedOrOwner(tokenId)
     nonReentrant
   {
-    uint coverId = cover.getClaimCoverId(claimId);
+    uint coverId = gateway.getClaimCoverId(claimId);
     require(coverId == tokenId, "Distributor: coverId claimId mismatch");
-    (ICover.ClaimStatus status, uint amountPaid, address coverAsset) = cover.getPayoutOutcome(claimId);
-    require(status == ICover.ClaimStatus.ACCEPTED, "Distributor: Claim not accepted");
+    (IGateway.ClaimStatus status, uint amountPaid, address coverAsset) = gateway.getPayoutOutcome(claimId);
+    require(status == IGateway.ClaimStatus.ACCEPTED, "Distributor: Claim not accepted");
 
     _burn(tokenId);
     if (coverAsset == ETH) {
@@ -228,11 +229,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     returns (bytes memory response, uint withheldAmount)
   {
     if (assetAmount == 0) {
-      return cover.executeCoverAction(tokenId, action, data);
+      return gateway.executeCoverAction(tokenId, action, data);
     }
     if (asset == ETH) {
       require(msg.value >= assetAmount, "Distributor: Insufficient ETH sent");
-      (response, withheldAmount) = cover.executeCoverAction{ value: msg.value }(tokenId, action, data);
+      (response, withheldAmount) = gateway.executeCoverAction{ value: msg.value }(tokenId, action, data);
       uint remainder = assetAmount.sub(withheldAmount);
       (bool ok, /* data */) = address(msg.sender).call{value: remainder}("");
       require(ok, "Distributor: Returning ETH remainder to sender failed.");
@@ -241,8 +242,8 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
 
     IERC20 token = IERC20(asset);
     token.safeTransferFrom(msg.sender, address(this), assetAmount);
-    token.approve(address(cover), assetAmount);
-    (response, withheldAmount) = cover.executeCoverAction(tokenId, action, data);
+    token.approve(address(gateway), assetAmount);
+    (response, withheldAmount) = gateway.executeCoverAction(tokenId, action, data);
     uint remainder = assetAmount.sub(withheldAmount);
     token.safeTransfer(msg.sender, remainder);
     return (response, withheldAmount);
@@ -265,7 +266,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     uint premiumInNXM,
     address memberAddress
   ) {
-    return cover.getCover(tokenId);
+    return gateway.getCover(tokenId);
   }
 
   /**
@@ -276,9 +277,9 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   function getPayoutOutcome(uint claimId)
   public
   view
-  returns (ICover.ClaimStatus status, uint amountPaid, address coverAsset)
+  returns (IGateway.ClaimStatus status, uint amountPaid, address coverAsset)
   {
-    (status, amountPaid, coverAsset) = cover.getPayoutOutcome(claimId);
+    (status, amountPaid, coverAsset) = gateway.getPayoutOutcome(claimId);
   }
 
   /**
@@ -304,8 +305,8 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   * @param newAddress address
   */
   function switchMembership(address newAddress) external onlyOwner {
-    nxmToken.approve(address(cover), uint(-1));
-    cover.switchMembership(newAddress);
+    nxmToken.approve(address(gateway), uint(-1));
+    gateway.switchMembership(newAddress);
   }
 
   /**

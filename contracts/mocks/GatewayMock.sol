@@ -16,13 +16,13 @@
 pragma solidity ^0.7.4;
 
 import "hardhat/console.sol";
-import "../interfaces/ICover.sol";
+import "../interfaces/IGateway.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
 
-contract CoverMock is ICover, ReentrancyGuard {
+contract GatewayMock is IGateway, ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 

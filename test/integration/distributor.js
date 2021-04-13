@@ -152,7 +152,7 @@ describe('Distributor', function () {
   });
 
   it('sells DAI cover to coverHolder successfully', async function () {
-    const { cover: coverContract, dai } = this.contracts;
+    const { gateway, dai } = this.contracts;
 
     const coverData = { ...daiCoverTemplate, asset: dai.address };
 
@@ -169,7 +169,7 @@ describe('Distributor', function () {
       feePercentage: DEFAULT_FEE_PERCENTAGE.toString(),
     });
 
-    const createdCover = await coverContract.getCover(expectedCoverId);
+    const createdCover = await gateway.getCover(expectedCoverId);
     assert.equal(createdCover.sumAssured.toString(), coverData.amount.toString());
     assert.equal(createdCover.coverPeriod.toString(), coverData.period);
     assert.equal(createdCover.contractAddress, coverData.contractAddress);
@@ -299,7 +299,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted ETH cover', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
 
@@ -340,7 +340,7 @@ describe('Distributor', function () {
   });
 
   it('reverts on redeem while claim is IN_PROGRESS', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -368,7 +368,7 @@ describe('Distributor', function () {
   });
 
   it('reverts on redeem if claim is REJECTED', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -398,7 +398,7 @@ describe('Distributor', function () {
   });
 
   it('reverts on double-redeem', async function () {
-    const { distributor, cover: coverContract } = this.contracts;
+    const { distributor } = this.contracts;
 
     const coverData = { ...ethCoverTemplate };
     await buyCover({ ...this.contracts, coverData, coverHolder });
@@ -427,7 +427,7 @@ describe('Distributor', function () {
   });
 
   it('allows claim reedeem for accepted DAI cover', async function () {
-    const { distributor, cover: coverContract, dai } = this.contracts;
+    const { distributor, dai } = this.contracts;
 
     const coverData = {
       amount: ether('1000'),

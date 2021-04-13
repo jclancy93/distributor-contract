@@ -15,7 +15,7 @@
 
 pragma solidity ^0.7.4;
 
-interface ICover {
+interface IGateway {
 
     enum ClaimStatus { IN_PROGRESS, ACCEPTED, REJECTED }
 
