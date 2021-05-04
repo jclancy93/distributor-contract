@@ -24,7 +24,6 @@ import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "./interfaces/IGateway.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/INXMaster.sol";
-import "hardhat/console.sol";
 
 contract Distributor is ERC721, Ownable, ReentrancyGuard {
   using SafeMath for uint;

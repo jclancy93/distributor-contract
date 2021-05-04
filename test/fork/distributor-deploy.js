@@ -11,10 +11,8 @@ const MemberRoles = artifacts.require('MemberRoles');
 const NXMaster = artifacts.require('NXMaster');
 const NXMToken = artifacts.require('NXMToken');
 const Governance = artifacts.require('Governance');
-const Claims = artifacts.require('Claims');
-const Quotation = artifacts.require('Quotation');
 const DistributorFactory = artifacts.require('DistributorFactory');
-const Cover = artifacts.require('Cover');
+const Distributor = artifacts.require('Distributor');
 
 const { submitGovernanceProposal } = require('./external').utils;
 const { hex } = require('../utils').helpers;
@@ -95,157 +93,23 @@ describe('creates distributor and approves KYC', function () {
     this.voters = voters;
   });
 
-  it('updating category 5 (Upgrade Proxy) to use AB voting', async function () {
-    const { master, governance, voters } = this;
-
-    const functionSignature = 'upgradeMultipleImplementations(bytes2[],address[])';
-
-    const upgradesActionDataNonProxy = web3.eth.abi.encodeParameters(
-      ['uint256', 'string', 'uint256', 'uint256', 'uint256', 'uint256[]', 'uint256', 'string', 'address', 'bytes2', 'uint256[]', 'string'],
-      [
-        ProposalCategory.upgradeProxy.toString(), // 1. Category Id
-        'Upgrade a contract Implementation', // 2. Name of category
-        '1', // 3. role authorized to vote: AB !! this is the modification vs current state
-        '50', // 4. Majority % required for acceptance
-        '15', // 5.  Quorum % required for acceptance
-        ['2'], // 6. Role Ids allowed to create proposal
-        (3 * 24 * 3600).toString(), // 7. Proposal closing time - 3 days
-        'QmRKKFHv1xpUtSfyrtUMcrdE6sMEc4CgDUKU135YrAZqV7', // 8. IPFS hash of action to be executed
-        '0x0000000000000000000000000000000000000000', // 9. Address of external contract for action execution
-        hex('MS'), // 10. Contract code of internal contract for action execution
-        ['0', '0', '60', '0'], // 11. [Minimum stake, incentives, Advisory Board % required, Is Special Resolution ]
-        functionSignature, // 12. Function Signature
-      ],
-    );
-
-    await submitGovernanceProposal(
-      ProposalCategory.editCategory,
-      upgradesActionDataNonProxy,
-      voters,
-      governance,
-    );
-
-    console.log('Updated category successfully.');
-  });
-
-  it('upgrades contracts', async function () {
-    const { master, governance, voters } = this;
-    console.log('Deploying contracts');
-
-    const newCL = await Claims.new();
-    const newMR = await MemberRoles.new();
-    const newQuotation = await Quotation.new();
-
-    const tcIsPRoxy = await master.isProxy(hex('TC'));
-    const mrIsPRoxy = await master.isProxy(hex('MR'));
-
-    console.log('Upgrading CL QT');
-
-    const upgradesActionDataNonProxy = web3.eth.abi.encodeParameters(
-      ['bytes2[]', 'address[]'],
-      [
-        ['CL', 'QT'].map(hex),
-        [newCL, newQuotation].map(c => c.address),
-      ],
-    );
-
-    await submitGovernanceProposal(
-      ProposalCategory.upgradeNonProxy,
-      upgradesActionDataNonProxy,
-      voters,
-      governance,
-    );
-
-    const storedCLAddress = await master.getLatestAddress(hex('CL'));
-    const storedQTAddress = await master.getLatestAddress(hex('QT'));
-
-    assert.equal(storedCLAddress, newCL.address);
-    assert.equal(storedQTAddress, newQuotation.address);
-
-    console.log('Non-proxy upgrade successful.');
-
-    console.log('Upgrading MR');
-
-    const upgradesActionDataProxy = web3.eth.abi.encodeParameters(
-      ['bytes2[]', 'address[]'],
-      [
-        ['MR'].map(hex),
-        [newMR].map(c => c.address),
-      ],
-    );
-
-    await submitGovernanceProposal(
-      ProposalCategory.upgradeProxy,
-      upgradesActionDataProxy,
-      voters,
-      governance,
-    );
-
-    const mrProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('MR')));
-    const mrImplementation = await mrProxy.implementation();
-
-    assert.equal(newMR.address, mrImplementation);
-
-    console.log('Proxy Upgrade successful.');
-  });
-
-  it('adds new Cover.sol contract', async function () {
-    const { master, voters, governance } = this;
-    console.log('Adding new cover contract..');
-    const coverImplementation = await Cover.new();
-
-
-    // Creating proposal for adding new internal contract
-    const addNewInternalContractActionData = web3.eth.abi.encodeParameters(
-      ['bytes2', 'address', 'uint'],
-      [hex('CO'), coverImplementation.address, 2],
-    );
-
-    await submitGovernanceProposal(
-      ProposalCategory.newContract,
-      addNewInternalContractActionData,
-      voters,
-      governance
-    );
-
-    const coverProxy = await OwnedUpgradeabilityProxy.at(await master.getLatestAddress(hex('CO')));
-    const storedImplementation = await coverProxy.implementation();
-
-    assert.equal(storedImplementation, coverImplementation.address);
-
-    const cover = await Cover.at(await master.getLatestAddress(hex('CO')));
-
-    const storedDAI = await cover.DAI();
-    assert.equal(storedDAI, Address.DAI);
-
-    const masterAddress = await cover.master();
-    assert.equal(masterAddress, master.address);
-
-    // sanity check an arbitrary cover
-    const cover10 = await cover.getCover(10);
-    assert.equal(cover10.coverAsset, '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
-    assert.equal(cover10.contractAddress, '0x448a5065aeBB8E423F0896E6c5D525C040f59af3');
-
-    this.cover = cover;
-  });
-
   it('deploys DistributorFactory', async function () {
     const { master }  = this;
 
     const factory = await DistributorFactory.new(master.address);
+
 
     this.factory = factory;
   });
 
   it('deploys distributor', async function () {
 
-    const { factory } = this;
+    const { factory, master } = this;
 
     const params = {
       feePercentage: 10,
       tokenName: 'magictoken',
       tokenSymbol: 'MT',
-      factoryAddress: '0x58505541E5341e3FB3d47645121602e4C77c08bF',
       treasury: '0xeadaceccc5b32e0f2151a94ae5c3cfb11e349754',
     };
 
@@ -264,6 +128,15 @@ describe('creates distributor and approves KYC', function () {
     );
     const distributorAddress = tx.logs[0].args.contractAddress;
     console.log(`Successfully deployed at ${distributorAddress}`);
+
+    const distributor = await Distributor.at(distributorAddress);
+
+    const gwAddress =  await master.getLatestAddress(hex('GW'));
+    const tokenAddress = await master.dAppToken();
+
+    assert.equal(await distributor.gateway(), gwAddress);
+    assert.equal(await distributor.nxmToken(), tokenAddress);
+    assert.equal(await distributor.master(), master.address);
     this.distributorAddress = distributorAddress;
   });
 

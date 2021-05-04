@@ -15,7 +15,6 @@
 
 pragma solidity ^0.7.4;
 
-import "hardhat/console.sol";
 import "../interfaces/IGateway.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
