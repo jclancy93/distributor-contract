@@ -14,6 +14,7 @@
     "test": "hardhat test test/index.js",
     "test-integration": "hardhat test test/integration/index.js",
     "deploy-kovan": "hardhat run --network kovan deploy/deploy-distributor.js",
+    "deploy-mainnet": "hardhat run --network mainnet deploy/deploy-distributor.js",
     "self-kyc-kovan": "hardhat run --network kovan deploy/self-kyc.js",
     "test-unit": "hardhat test test/unit/index.js",
     "typechain": "hardhat typechain",
