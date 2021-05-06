@@ -140,6 +140,17 @@ Example:
 
 https://github.com/NexusMutual/distributor-contract/blob/distributor-contract-v1/examples/example-submit-claim.js
 
+#### Proof of loss submission
+
+Every claim submission needs to be accompanied by a proof of loss submission.
+
+This can be done on the NexusMutual app with the following link that needs to include the cover id and owner address 
+as shown:
+
+https://app.nexusmutual.io/home/proof-of-loss/add-affected-addresses?coverId=<cover_id>&owner=<nft_owner_address>
+
+Redirect the user to the page above the proof of loss sumbission with the signature once the claim is submitted.
+
 #### redeemClaim
 
 Owner of the cover token reedems its claim payout. The Claim must have been approved and paid out,
