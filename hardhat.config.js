@@ -71,7 +71,7 @@ module.exports = {
       { version: '0.5.7' }, // nexus mutual governance
       { version: '0.5.16' }, // uniswap v2 core
       { version: '0.6.6' }, // uniswap v2 peripherals,
-      { settings: compilerSettings, version: '0.8.4' }, // swap operator
+      { version: '0.8.4' }, // swap operator
     ].map((compiler) => ({ ...compiler, settings: compilerSettings })),
   },
 };
