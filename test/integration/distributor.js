@@ -217,7 +217,7 @@ describe('Distributor', function () {
         data, {
           from: coverHolder,
         }),
-      'Cover: unknown asset',
+      'Gateway: unknown asset',
     );
   });
 
@@ -267,7 +267,7 @@ describe('Distributor', function () {
           from: coverHolder,
           value: priceWithFee,
         }),
-      'Cover: Only whole unit sumAssured supported',
+      'Gateway: Only whole unit sumAssured supported',
     );
   });
 
