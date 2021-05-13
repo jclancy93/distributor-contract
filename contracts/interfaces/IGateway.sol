@@ -53,6 +53,13 @@ interface IGateway {
 
     function submitClaim(uint coverId, bytes calldata data) external returns (uint);
 
+    function claimTokens(
+      uint coverId,
+      uint incidentId,
+      uint coveredTokenAmount,
+      address coverAsset
+    ) external returns (uint claimId, uint payoutAmount);
+
     function getClaimCoverId(uint claimId) external view returns (uint);
 
     function getPayoutOutcome(uint claimId) external view returns (ClaimStatus status, uint paidAmount, address asset);

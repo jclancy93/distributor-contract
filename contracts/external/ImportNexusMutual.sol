@@ -25,6 +25,9 @@ import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableTokenC
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableProposalCategory.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableGovernance.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposablePooledStaking.sol";
+import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableMCR.sol";
+import "../../nexusmutual-contracts/contracts/modules/oracles/TwapOracle.sol";
+import "../../nexusmutual-contracts/contracts/mocks/Pool/P1MockLido.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Testnet/TestnetNXMaster.sol";
 
 import "../../nexusmutual-contracts/contracts/external/WETH9.sol";

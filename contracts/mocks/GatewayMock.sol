@@ -17,11 +17,10 @@ pragma solidity ^0.7.4;
 
 import "../interfaces/IGateway.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-v3/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-v3/math/SafeMath.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
 
-contract GatewayMock is IGateway, ReentrancyGuard {
+contract GatewayMock is IGateway{
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
@@ -76,6 +75,10 @@ contract GatewayMock is IGateway, ReentrancyGuard {
     }
 
     function submitClaim(uint coverId, bytes calldata data) external override returns (uint) {
+        revert("Unsupported");
+    }
+
+    function claimTokens(uint coverId, uint incidentId, uint coveredTokenAmount, address coverAsset) external override returns (uint claimId, uint payoutAmount) {
         revert("Unsupported");
     }
 

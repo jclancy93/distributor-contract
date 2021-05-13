@@ -180,6 +180,33 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   }
 
   /**
+  * @notice Submit a claim for the cover
+  * @param tokenId cover token id
+  * @param incidentId id of the incident
+  * @param coveredTokenAmount amount of yield tokens covered
+  * @param coverAsset yield token that is covered
+  */
+  function claimTokens(
+    uint tokenId,
+    uint incidentId,
+    uint coveredTokenAmount,
+    address coverAsset
+  )
+    external
+    onlyTokenApprovedOrOwner(tokenId)
+    returns (uint claimId, uint payoutAmount)
+  {
+    // coverId = tokenId
+    (claimId, payoutAmount) = gateway.claimTokens(
+      tokenId,
+      incidentId,
+      coveredTokenAmount,
+      coverAsset
+    );
+    emit ClaimSubmitted(tokenId, claimId, msg.sender);
+  }
+
+  /**
   * @notice Redeem the claim to the cover. Requires that that the payout is completed.
   * @param tokenId cover token id
   */

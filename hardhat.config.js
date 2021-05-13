@@ -1,10 +1,10 @@
 require('dotenv').config();
 require('@nomiclabs/hardhat-web3');
 require('@nomiclabs/hardhat-truffle5');
-require("@nomiclabs/hardhat-etherscan");
+require('@nomiclabs/hardhat-etherscan');
 
 const { task } = require('hardhat/config');
-const ether = n => `${n}${'0'.repeat(18)}`;
+const ether = (n) => `${n}${'0'.repeat(18)}`;
 
 task('test', async (_, hre, runSuper) => {
   hre.accounts = await hre.web3.eth.getAccounts();
@@ -13,7 +13,6 @@ task('test', async (_, hre, runSuper) => {
 });
 
 task('typechain', async (_, { config }) => {
-
   const { tsGenerator } = require('ts-generator');
   const { TypeChain } = require('typechain/dist/TypeChain');
 
@@ -53,7 +52,6 @@ const compilerSettings = process.env.ENABLE_OPTIMIZER
   : {};
 
 module.exports = {
-
   mocha: {
     exit: true,
     bail: true,
@@ -73,6 +71,7 @@ module.exports = {
       { version: '0.5.7' }, // nexus mutual governance
       { version: '0.5.16' }, // uniswap v2 core
       { version: '0.6.6' }, // uniswap v2 peripherals,
-    ].map(compiler => ({ ...compiler, settings: compilerSettings })),
+      { settings: compilerSettings, version: '0.8.4' }, // swap operator
+    ].map((compiler) => ({ ...compiler, settings: compilerSettings })),
   },
 };
