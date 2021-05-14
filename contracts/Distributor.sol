@@ -195,7 +195,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
   )
     external
     onlyTokenApprovedOrOwner(tokenId)
-    returns (uint claimId, uint payoutAmount)
+    returns (uint claimId, uint payoutAmount, address payoutToken)
   {
     IERC20 token = IERC20(coverAsset);
     token.approve(address(gateway), coveredTokenAmount);
@@ -207,7 +207,12 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
       coverAsset
     );
     console.log("payoutAmount %s", payoutAmount);
-    IERC20(payoutToken).safeTransfer(msg.sender, coveredTokenAmount);
+    if (payoutToken == ETH) {
+      (bool ok, /* data */) = address(msg.sender).call{value: payoutAmount}("");
+      require(ok, "Distributor: ETH transfer to sender failed.");
+    } else {
+      IERC20(payoutToken).safeTransfer(msg.sender, coveredTokenAmount);
+    }
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
 
