@@ -15,6 +15,7 @@
 
 pragma solidity ^0.7.4;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts-v3/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
@@ -196,13 +197,17 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     onlyTokenApprovedOrOwner(tokenId)
     returns (uint claimId, uint payoutAmount)
   {
+    IERC20 token = IERC20(coverAsset);
+    token.approve(address(gateway), coveredTokenAmount);
     // coverId = tokenId
-    (claimId, payoutAmount) = gateway.claimTokens(
+    (claimId, payoutAmount, payoutToken) = gateway.claimTokens(
       tokenId,
       incidentId,
       coveredTokenAmount,
       coverAsset
     );
+    console.log("payoutAmount %s", payoutAmount);
+    IERC20(payoutToken).safeTransfer(msg.sender, coveredTokenAmount);
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
 

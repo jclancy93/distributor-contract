@@ -29,6 +29,7 @@ import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableMCR.so
 import "../../nexusmutual-contracts/contracts/mocks/Disposables/DisposableGateway.sol";
 import "../../nexusmutual-contracts/contracts/modules/oracles/TwapOracle.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Pool/P1MockLido.sol";
+import "../../nexusmutual-contracts/contracts/mocks/Tokens/ERC20MintableDetailed.sol";
 import "../../nexusmutual-contracts/contracts/mocks/Testnet/TestnetNXMaster.sol";
 
 import "../../nexusmutual-contracts/contracts/external/WETH9.sol";

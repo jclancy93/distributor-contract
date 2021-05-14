@@ -1,7 +1,7 @@
 const { accounts, web3, artifacts } = require('hardhat');
 const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
-const { getBuyCoverDataParameter, ClaimStatus } = require('./external');
+const { getBuyCoverDataParameter, ClaimStatus, addIncident } = require('./external');
 const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const BN = web3.utils.BN;
@@ -11,8 +11,9 @@ const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
 const DistributorFactory = artifacts.require('DistributorFactory');
 const Distributor = artifacts.require('Distributor');
 const ERC20BlacklistableMock = artifacts.require('ERC20BlacklistableMock');
+const ERC20MintableDetailed = artifacts.require('ERC20MintableDetailed');
 
-const [, member1, member2, member3, coverHolder, distributorOwner, nonOwner, treasury, newMemberAddress] = accounts;
+const [owner, member1, member2, member3, coverHolder, distributorOwner, nonOwner, treasury, newMemberAddress] = accounts;
 
 const DEFAULT_FEE_PERCENTAGE = 500; // 5%
 
@@ -125,6 +126,56 @@ describe('Distributor', function () {
     });
 
     this.contracts.distributor = distributor;
+  });
+
+  it.only('claimTokens sends DAI tokens in exchange of ybDAI to NFT owner', async function () {
+    const { dai, incidents, gateway, distributor, cd: claimsData } = this.contracts;
+
+    await dai.mint(coverHolder, ether('10000000'));
+    const ybDAI = await ERC20MintableDetailed.new('yield bearing DAI', 'ybDAI', 18);
+    await ybDAI.mint(coverHolder, ether('10000000'));
+    await ybDAI.approve(incidents.address, ether('10000000'), {
+      from: coverHolder,
+    });
+
+    const coverData = { ...daiCoverTemplate, asset: dai.address };
+    const productId = coverData.contractAddress;
+    await incidents.addProducts([productId], [ybDAI.address], [dai.address], {
+      from: owner,
+    });
+    await buyCover({ ...this.contracts, coverData, coverHolder });
+
+    const incidentDate = await time.latest();
+    const priceBefore = ether('2'); // DAI per ybDAI
+    await addIncident(
+      this.contracts,
+      [owner],
+      productId,
+      incidentDate,
+      priceBefore,
+    );
+
+    const expectedCoverId = 1;
+    const submitTx = await distributor.claimTokens(
+      expectedCoverId,
+      0,
+      ether('500'),
+      ybDAI.address,
+      {
+        from: coverHolder,
+      },
+    );
+
+    const expectedClaimId = 1;
+    const block = await web3.eth.getBlock(submitTx.receipt.blockNumber);
+    const claim = await claimsData.getClaim(expectedClaimId);
+
+    assert.equal(claim.claimId.toString(), expectedClaimId.toString());
+    assert.equal(claim.coverId.toString(), expectedCoverId.toString());
+    assert.equal(claim.vote.toString(), '0');
+    assert.equal(claim.status.toString(), '14');
+    assert.equal(claim.dateUpd.toString(), block.timestamp.toString());
+    assert.equal(claim.state12Count.toString(), '0');
   });
 
   it('sells ETH cover to coverHolder successfully', async function () {
@@ -501,7 +552,8 @@ describe('Distributor', function () {
     const treasuryEthBalanceBefore = toBN(await web3.eth.getBalance(treasury));
     const ethCoversCount = 2;
     for (let i = 0; i < ethCoversCount; i++) {
-      const coverData = { ...ethCoverTemplate, generationTime: generationTime++ };
+      generationTime += 2;
+      const coverData = { ...ethCoverTemplate, generationTime };
       await buyCover({ ...this.contracts, coverData, coverHolder, distributor, qt });
     }
 

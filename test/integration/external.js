@@ -4,6 +4,7 @@ const { toBN } = web3.utils;
 const { hex } = require('../utils').helpers;
 const setup = require('../../nexusmutual-contracts/test/integration/setup');
 const { enrollClaimAssessor, enrollMember } = require('../../nexusmutual-contracts/test/integration/utils/enroll')
+const { addIncident } = require('../../nexusmutual-contracts/test/integration/utils/incidents');
 const { getBuyCoverDataParameter } = require('../../nexusmutual-contracts/test/integration/Gateway/utils');
 
 const ClaimStatus = {
@@ -21,5 +22,6 @@ module.exports = {
   setup,
   enroll,
   getBuyCoverDataParameter,
+  addIncident,
   ClaimStatus
 };
