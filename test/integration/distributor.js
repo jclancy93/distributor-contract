@@ -3,7 +3,7 @@ const { ether, expectEvent, expectRevert, time } = require('@openzeppelin/test-h
 const { assert } = require('chai');
 const { getBuyCoverDataParameter, ClaimStatus, addIncident } = require('./external');
 const { toBN } = web3.utils;
-const { hex } = require('../utils').helpers;
+const { helpers: { bnEqual, hex } } = require('../utils');
 const BN = web3.utils.BN;
 
 const { enrollMember, enrollClaimAssessor } = require('./external').enroll;
@@ -134,7 +134,7 @@ describe('Distributor', function () {
     await dai.mint(coverHolder, ether('10000000'));
     const ybDAI = await ERC20MintableDetailed.new('yield bearing DAI', 'ybDAI', 18);
     await ybDAI.mint(coverHolder, ether('10000000'));
-    await ybDAI.approve(incidents.address, ether('10000000'), {
+    await ybDAI.approve(distributor.address, ether('10000000'), {
       from: coverHolder,
     });
 
@@ -156,10 +156,12 @@ describe('Distributor', function () {
     );
 
     const expectedCoverId = 1;
+    const daiBalanceBefore = await dai.balanceOf(coverHolder);
+    const requestedAmount = ether('500');
     const submitTx = await distributor.claimTokens(
       expectedCoverId,
       0,
-      ether('500'),
+      requestedAmount,
       ybDAI.address,
       {
         from: coverHolder,
@@ -176,6 +178,69 @@ describe('Distributor', function () {
     assert.equal(claim.status.toString(), '14');
     assert.equal(claim.dateUpd.toString(), block.timestamp.toString());
     assert.equal(claim.state12Count.toString(), '0');
+    const daiBalanceAfter = await dai.balanceOf(coverHolder);
+    const balanceDiff = daiBalanceAfter.sub(daiBalanceBefore);
+    const tokensToReceive = requestedAmount.mul(priceBefore).div(ether('1'));
+    bnEqual(tokensToReceive, balanceDiff);
+  });
+
+  it.only('claimTokens sends ETH tokens in exchange of ybETH to NFT owner', async function () {
+    const { dai, incidents, gateway, distributor, cd: claimsData } = this.contracts;
+
+    const ybETH = await ERC20MintableDetailed.new('yield bearing ETH', 'ybETH', 18);
+    await ybETH.mint(coverHolder, ether('10000000'));
+    await ybETH.approve(distributor.address, ether('10000000'), {
+      from: coverHolder,
+    });
+
+    const coverData = { ...ethCoverTemplate, asset: ETH };
+    const productId = coverData.contractAddress;
+    await incidents.addProducts([productId], [ybETH.address], [ETH], {
+      from: owner,
+    });
+    await buyCover({ ...this.contracts, coverData, coverHolder });
+
+    const incidentDate = await time.latest();
+    const priceBefore = ether('2'); // ETH per ybETH
+    await addIncident(
+      this.contracts,
+      [owner],
+      productId,
+      incidentDate,
+      priceBefore,
+    );
+
+    const expectedCoverId = 1;
+    const ethBalanceBefore = toBN(await web3.eth.getBalance(coverHolder));
+    const requestedAmount = ether('3');
+    const submitTx = await distributor.claimTokens(
+      expectedCoverId,
+      0,
+      requestedAmount,
+      ybETH.address,
+      {
+        from: coverHolder,
+        gasPrice: 0,
+      },
+    );
+
+    const expectedClaimId = 1;
+    const block = await web3.eth.getBlock(submitTx.receipt.blockNumber);
+    const claim = await claimsData.getClaim(expectedClaimId);
+
+    assert.equal(claim.claimId.toString(), expectedClaimId.toString());
+    assert.equal(claim.coverId.toString(), expectedCoverId.toString());
+    assert.equal(claim.vote.toString(), '0');
+    assert.equal(claim.status.toString(), '14');
+    assert.equal(claim.dateUpd.toString(), block.timestamp.toString());
+    assert.equal(claim.state12Count.toString(), '0');
+
+    const ethBalanceAfter = toBN(
+      await web3.eth.getBalance(coverHolder),
+    );
+    const balanceDiff = ethBalanceAfter.sub(ethBalanceBefore);
+    const tokensToReceive = requestedAmount.mul(priceBefore).div(ether('1'));
+    bnEqual(tokensToReceive, balanceDiff);
   });
 
   it('sells ETH cover to coverHolder successfully', async function () {
