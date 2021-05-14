@@ -78,7 +78,8 @@ contract GatewayMock is IGateway{
         revert("Unsupported");
     }
 
-    function claimTokens(uint coverId, uint incidentId, uint coveredTokenAmount, address coverAsset) external override returns (uint claimId, uint payoutAmount) {
+    function claimTokens(uint coverId, uint incidentId, uint coveredTokenAmount, address coverAsset)
+    external override returns (uint claimId, uint payoutAmount, address payoutToken) {
         revert("Unsupported");
     }
 

@@ -58,7 +58,7 @@ interface IGateway {
       uint incidentId,
       uint coveredTokenAmount,
       address coverAsset
-    ) external returns (uint claimId, uint payoutAmount);
+    ) external returns (uint claimId, uint payoutAmount, address payoutToken);
 
     function getClaimCoverId(uint claimId) external view returns (uint);
 
