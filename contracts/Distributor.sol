@@ -15,7 +15,6 @@
 
 pragma solidity ^0.7.4;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts-v3/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-v3/token/ERC20/SafeERC20.sol";
@@ -198,6 +197,7 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
     returns (uint claimId, uint payoutAmount, address payoutToken)
   {
     IERC20 token = IERC20(coverAsset);
+    token.safeTransferFrom(msg.sender, address(this), coveredTokenAmount);
     token.approve(address(gateway), coveredTokenAmount);
     // coverId = tokenId
     (claimId, payoutAmount, payoutToken) = gateway.claimTokens(
@@ -206,12 +206,11 @@ contract Distributor is ERC721, Ownable, ReentrancyGuard {
       coveredTokenAmount,
       coverAsset
     );
-    console.log("payoutAmount %s", payoutAmount);
     if (payoutToken == ETH) {
       (bool ok, /* data */) = address(msg.sender).call{value: payoutAmount}("");
       require(ok, "Distributor: ETH transfer to sender failed.");
     } else {
-      IERC20(payoutToken).safeTransfer(msg.sender, coveredTokenAmount);
+      IERC20(payoutToken).safeTransfer(msg.sender, payoutAmount);
     }
     emit ClaimSubmitted(tokenId, claimId, msg.sender);
   }
