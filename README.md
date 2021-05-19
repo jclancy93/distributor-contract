@@ -94,7 +94,7 @@ should be easily translatable to frontend code that does the equivalent with the
 
 Example:
 
-https://github.com/NexusMutual/distributor-contract/blob/distributor-contract-v1/examples/example-buy-cover.js
+https://github.com/NexusMutual/distributor-contract/blob/master/examples/example-buy-cover.js
 
 
 #### submitClaim
